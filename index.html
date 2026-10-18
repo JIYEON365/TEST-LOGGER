@@ -69,6 +69,10 @@ button{cursor:pointer;touch-action:manipulation;border:0;background:none}
 .cell small{display:block;font-size:10px;color:var(--sub);line-height:1.2}.cell span{display:block;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cell.ok{background:var(--okb);color:var(--ok);border-color:transparent}.cell.ng{background:var(--ngb);color:var(--ng);border-color:transparent}
 .cell.adj{border-style:dashed;color:var(--pri)}.cell.adj span{font-weight:400}.sn{width:78px!important;flex:none}
+.schips{display:flex;gap:5px;overflow-x:auto;padding:7px 8px 0;flex:none;scrollbar-width:none}.schips::-webkit-scrollbar{display:none}
+.schip{flex:none;padding:5px 11px;border-radius:99px;background:var(--keyfn);font-size:12.5px;font-weight:700;color:var(--sub)}.schip small{font-weight:400}.schip em{color:var(--ng);font-style:normal;font-weight:700}
+.schip.done{color:var(--ok)}.schip.on{background:var(--pri2);color:var(--pri);box-shadow:inset 0 0 0 1.5px var(--pri)}
+.mt small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cell.em span{color:var(--sub);font-weight:400}.cell.cur{border-color:var(--pri);box-shadow:0 0 0 2px var(--pri)}
 .tmr{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:8px 10px;margin-bottom:8px}
 .tmr.done{border-color:var(--ok);background:var(--okb)}
@@ -132,7 +136,7 @@ button{cursor:pointer;touch-action:manipulation;border:0;background:none}
 <div id="toast"></div>
 <script>
 'use strict';
-const VERSION='1.1.0';
+const VERSION='1.2.0';
 const KEY='coway-rel-log.v1';
 const $=s=>document.querySelector(s);
 const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
@@ -151,7 +155,7 @@ const PRESETS=[
  {name:'소음',unit:'dB(A)'},{name:'저항',unit:'Ω'},{name:'절연저항',unit:'MΩ'},
  {name:'누설전류',unit:'mA'},{name:'표면온도',unit:'℃'},{name:'압력',unit:'kPa'},{name:'동작시간',unit:'s'}
 ];
-const STAGE_PRESETS=['초기','환경시험 후','내구시험 후','고온고습 후','열충격 후','진동 후','낙하 후','회복 후'];
+const STAGE_PRESETS=['초기','내열 후','내한 후','고온고습 후','열충격 후','환경시험 후','내구시험 후','진동 후','낙하 후','회복 후'];
 const DEF_SET={autoNext:true,beep:true,vib:true,awake:true,voiceAuto:true,theme:'auto'};
 
 /* ---------- storage ---------- */
@@ -218,10 +222,10 @@ function back(){if(STK.length)history.back();else{V.name='home';render()}}
 /* ---------- render ---------- */
 function render(){
  if(V.name!=='measure'){if(voiceOn)stopVoice();wake(false)}else wake(true);
- const app=$('#app');const sc=$('#ichips')?.scrollLeft;
+ const app=$('#app');const sc=$('#ichips')?.scrollLeft,sc2=$('#schips')?.scrollLeft;
  const R={home:renderHome,part:renderPart,edit:renderEdit,measure:renderMeasure,report:renderReport}[V.name]||renderHome;
  app.innerHTML=R();
- if(V.name==='measure'){const ic=$('#ichips');if(ic&&sc!=null)ic.scrollLeft=sc;$('.ichip.on')?.scrollIntoView({inline:'nearest',block:'nearest'});
+ if(V.name==='measure'){const ic=$('#ichips');if(ic&&sc!=null)ic.scrollLeft=sc;const sc_=$('#schips');if(sc_&&sc2!=null)sc_.scrollLeft=sc2;$('.ichip.on')?.scrollIntoView({inline:'nearest',block:'nearest'});$('.schip.on')?.scrollIntoView({inline:'nearest',block:'nearest'});
   const cc=$('.cell.cur'),ms=$('#mscroll');if(cc&&ms){const r=cc.getBoundingClientRect(),m=ms.getBoundingClientRect();if(r.bottom>m.bottom||r.top<m.top)cc.scrollIntoView({block:'nearest'})}updateDisp()}
 }
 
@@ -276,14 +280,15 @@ function renderMeasure(){
   return `<button class="ichip ${x.id===it.id?'on':''} ${f===N?'done':''}" data-act="pickItem" data-id="${x.id}">${esc(x.name)}<small>${f}/${N}${ng?` <em>NG${ng}</em>`:''}</small></button>`}).join('');
  const cells=arr.map((x,i)=>{const j=x?judge(x.v,it):'';return `<button class="cell ${i===V.sample?'cur':''} ${x?(j==='NG'?'ng':j==='OK'?'ok':''):'em'}" data-act="cell" data-i="${i}"><small>${i+1}${x&&x.n?' ✎':''}</small><span>${x?fmt(x.v,4):'·'}</span></button>`}).join('')+`<button class="cell adj" data-act="nAdd"><small>시료</small><span>＋</span></button>${N>1?`<button class="cell adj" data-act="nDel"><small>시료</small><span>－</span></button>`:''}`;
  return `<div class="mwrap"><header class="top slim"><button class="ib" data-act="back">‹</button>
- <div class="mt"><b>${esc(p.name)}</b><select class="stsel" data-bind="stageSel">${p.stages.map(s=>`<option value="${s.id}" ${s.id===V.stage?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
+ <div class="mt"><b>${esc(p.name)}</b><small class="sub sm">${esc([p.code,p.lot].filter(Boolean).join(' · '))||'시험 단계 → 시료 칸 → 값 입력'}</small></div>
  <span class="clock" id="clock">${clockStr()}</span><button class="ib ${voiceOn?'live':''}" data-act="voice" aria-label="음성 입력">🎤</button></header>
+ <div class="schips" id="schips">${p.stages.map(s=>{const a=getArr(p,s.id,it.id),f=a.filter(Boolean).length,ng=a.filter(y=>y&&judge(y.v,it)==='NG').length;return `<button class="schip ${s.id===V.stage?'on':''} ${f===a.length?'done':''}" data-act="pickStage" data-id="${s.id}">${esc(s.name)} <small>${f}/${a.length}${ng?` <em>NG</em>`:''}</small></button>`}).join('')}</div>
  <div class="ichips" id="ichips">${chips}</div>
  <div class="mscroll" id="mscroll"><div class="spec"><div><b>${esc(it.name)}</b> <span class="sub sm">${esc(specText(it))}</span></div>
  <div class="mini-st">${st.n?`x̄ <b>${fmt(st.mean)}</b> · min <b>${fmt(st.min)}</b> · max <b>${fmt(st.max)}</b>${st.n>1?` · σ ${fmt(st.sd)}`:''}${st.ng?` · <em class="ngt">NG ${st.ng}</em>`:''}`:'측정값 없음 — 아래 키패드로 입력'}</div></div>
  <div class="cells">${cells}</div>${timerHTML(it)}
- ${voiceOn?`<div class="heard">🎤 듣는 중 · ${V.heard?`마지막 인식: “${esc(V.heard)}”`:'숫자를 말하세요 (예: “사 점 팔”, “4.8”) · “취소” “다음” “시작” “정지”'}</div>`:''}</div>
- <div class="dispbar"><div class="dlabel">시료 #${V.sample+1}${cur?` <span class="sub">· 기존 ${fmt(cur.v,4)} (${fmtDate(cur.t)}) → 입력 시 덮어씀</span>`:''}</div><div id="disp" class="disp"></div></div>
+ ${voiceOn?`<div class="heard">🎤 듣는 중 · ${V.heard?`인식: “${esc(V.heard)}”`:'예: “내열 1, 백오십” · “고온고습 2번 4.8” · “사 점 팔” · “취소” “다음” “시작”'}${V.last?`<br><b>✓ ${esc(V.last)}</b>`:''}</div>`:''}</div>
+ <div class="dispbar"><div class="dlabel">${esc(p.stages.find(s=>s.id===V.stage).name)} · 시료 #${V.sample+1}${cur?` <span class="sub">· 기존 ${fmt(cur.v,4)} (${fmtDate(cur.t)}) → 입력 시 덮어씀</span>`:''}</div><div id="disp" class="disp"></div></div>
  <div class="pad">${KEYPAD}</div></div>`}
 
 function updateDisp(){const d=$('#disp');if(!d)return;const it=item();const v=num(V.input);
@@ -305,7 +310,7 @@ function key(k){let s=V.input;
 function commit(){const v=parseFloat(V.input);if(!isFinite(v)){toast('값을 입력하세요');return}
  const p=part(),it=item(),arr=getArr(p,V.stage,it.id),i=V.sample;
  UNDO.push({pid:p.id,sid:V.stage,iid:it.id,i,prev:arr[i]?{...arr[i]}:null});if(UNDO.length>100)UNDO.shift();
- arr[i]={v,t:Date.now(),n:arr[i]?.n||''};p.updated=Date.now();save();
+ arr[i]={v,t:Date.now(),n:arr[i]?.n||''};p.updated=Date.now();save();V.last=`${p.stages.find(s=>s.id===V.stage).name} #${i+1} · ${it.name} ${fmt(v,4)} ${it.unit||''}`;
  const j=judge(v,it);if(j==='NG'){vib([90,60,90,60,250]);beep(300,.3,.3);toast(`⚠ #${i+1} ${fmt(v,4)} 기준 이탈 (NG)`)}else{vib(25);beep(1300,.05,.15)}
  V.flash=j;V.input='';
  let nx=arr.findIndex((x,k)=>k>i&&!x);if(nx<0)nx=arr.findIndex(x=>!x);
@@ -341,17 +346,39 @@ function toggleVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRec
  REC.onend=()=>{if(voiceOn&&V.name==='measure')setTimeout(()=>{try{REC.start()}catch(e){}},150)};
  voiceOn=true;V.heard='';try{REC.start()}catch(e){}unlockAudio();render();toast('🎤 숫자를 말하면 바로 기록돼요')}
 function stopVoice(){voiceOn=false;try{REC&&REC.stop()}catch(e){}}
+const UNIT_ALIAS={rpm:['알피엠','알피앰'],ma:['밀리암페어','미리암페어','밀리'],v:['볼트'],w:['와트'],'l/min':['리터'],'db(a)':['데시벨','디비'],'℃':['도'],kpa:['킬로파스칼']};
+const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&');
+function takeKey(str,keys){keys=keys.filter(k=>k[0]).sort((a,b)=>b[0].length-a[0].length);
+ for(const[k,id]of keys){const re=new RegExp([...k].map(reEsc).join('\\s*'),'i');if(re.test(str))return{str:str.replace(re,' '),id}}return null}
+function parseTarget(s){const p=part();if(!p)return null;let str=' '+s+' ',sid=null,iid=null,idx=null,val=null;
+ const sk=[];p.stages.forEach(st=>{const nm=st.name.replace(/\s/g,'');const base=nm.replace(/(시험)?후$/,'').replace(/시험$/,'');sk.push([nm,st.id]);if(base&&base!==nm)sk.push([base,st.id])});
+ let m=takeKey(str,sk);if(m){str=m.str;sid=m.id}
+ const ik=p.items.map(it=>[it.name.replace(/\s/g,''),it.id]);const uc={};p.items.forEach(it=>{const u=(it.unit||'').toLowerCase();if(u)uc[u]=(uc[u]||0)+1});
+ p.items.forEach(it=>{const u=(it.unit||'').toLowerCase();if(!u||uc[u]!==1)return;if(u.length>=2)ik.push([u,it.id]);(UNIT_ALIAS[u]||[]).forEach(a=>ik.push([a,it.id]))});
+ m=takeKey(str,ik);if(m){str=m.str;iid=m.id}
+ const beon=/번/.test(str);if(!sid&&!iid&&!beon)return null;
+ let raw=str.replace(/번(째)?/g,' ').split(/[\s,]+/).filter(Boolean);while(raw.length&&parseSpoken(raw[0])==null)raw.shift();
+ if(sid||beon){if(raw.length>=2){idx=parseSpoken(raw[0]);val=parseSpoken(raw.slice(1).join(''))}else if(raw.length===1)idx=parseSpoken(raw[0])}
+ else val=parseSpoken(raw.join(''));
+ if(idx!=null){idx=Math.round(idx)-1;if(idx<0||idx>=200)idx=null}
+ return{sid,iid,idx,val}}
+function applyTarget(r){const p=part();if(r.sid)V.stage=r.sid;setItem(r.iid||V.itemId);
+ if(r.idx!=null){const st=p.stages.find(s=>s.id===V.stage),N=nOf(p,V.stage);if(r.idx>=N){st.n=r.idx+1;p.items.forEach(it=>getArr(p,V.stage,it.id));save();toast(`${st.name} 시료 수 → ${r.idx+1}개로 늘림`)}V.sample=r.idx}
+ if(r.val!=null){V.input=String(r.val);if(S.settings.voiceAuto)return commit()}
+ else toast(`→ ${p.stages.find(s=>s.id===V.stage).name} · ${item().name} · #${V.sample+1}`);
+ render()}
 function handleSpeech(t){if(V.name!=='measure')return;const s=t.trim(),c=s.replace(/\s/g,'');V.heard=s;
  if(/취소|되돌|지워/.test(c))return undo();if(/^(다음|넘겨|스킵|패스)/.test(c))return skip();
  if(/시작|스타트/.test(c)){if(!T.run)tStart();return render()}if(/정지|스톱|멈춰|중지/.test(c)){if(T.run)tStart();return render()}
  if(/리셋|초기화/.test(c)){tResetRaw();return render()}
+ const r=parseTarget(s);if(r)return applyTarget(r);
  const v=parseSpoken(c);if(v==null){toast(`“${s}” — 숫자로 인식하지 못했어요`);return render()}
  V.input=String(v);if(S.settings.voiceAuto)commit();else{render()}}
 
 /* ---------- editor ---------- */
 function newItem(o={}){return Object.assign({id:uid(),name:'',unit:'',lsl:'',usl:'',timed:false,dur:60},o)}
 function openEditor(p){D=p?JSON.parse(JSON.stringify({id:p.id,name:p.name,code:p.code||'',maker:p.maker||'',lot:p.lot||'',note:p.note||'',samples:p.samples,stages:p.stages,items:p.items})):
- {_new:true,id:uid(),name:'',code:'',maker:'',lot:'',note:'',samples:10,stages:[{id:uid(),name:'초기'},{id:uid(),name:'환경시험 후'},{id:uid(),name:'내구시험 후'}],items:[]};go('edit')}
+ {_new:true,id:uid(),name:'',code:'',maker:'',lot:'',note:'',samples:10,stages:[{id:uid(),name:'초기'},{id:uid(),name:'내열 후'},{id:uid(),name:'내한 후'},{id:uid(),name:'고온고습 후'},{id:uid(),name:'열충격 후'},{id:uid(),name:'내구시험 후'}],items:[]};go('edit')}
 function renderEdit(){if(!D){V.name='home';return renderHome()}
  const items=D.items.map((it,i)=>`<div class="itrow"><div class="g-it"><input data-bind="it.${i}.name" value="${esc(it.name)}" placeholder="항목명 (예: 최소 동작전압)"><input data-bind="it.${i}.unit" value="${esc(it.unit)}" placeholder="단위"></div>
  <div class="g-it2"><label class="mini">하한 (LSL)<input inputmode="decimal" data-bind="it.${i}.lsl" value="${esc(it.lsl)}" placeholder="없음"></label><label class="mini">상한 (USL)<input inputmode="decimal" data-bind="it.${i}.usl" value="${esc(it.usl)}" placeholder="없음"></label></div>
@@ -449,7 +476,7 @@ function cellModal(i){const p=part(),it=item(),x=getArr(p,V.stage,it.id)[i];cons
 const ACT={
  back,close:closeModal,settings:settingsModal,
  newPart:()=>openEditor(null),
- demo(){const st=[{id:uid(),name:'초기'},{id:uid(),name:'환경시험 후'},{id:uid(),name:'내구시험 후'}];
+ demo(){const st=[{id:uid(),name:'초기'},{id:uid(),name:'내열 후',n:3},{id:uid(),name:'내한 후',n:3},{id:uid(),name:'고온고습 후',n:3},{id:uid(),name:'열충격 후',n:3},{id:uid(),name:'내구시험 후',n:5}];
   S.parts.push({id:uid(),name:'예시) 정수 펌프 모터',code:'PM-24V-01',maker:'',lot:'',note:'예시 부품입니다. 자유롭게 수정·삭제하세요.',samples:10,stages:st,
   items:[newItem({name:'최소 동작전압',unit:'V',usl:'18'}),newItem({name:'소비전류',unit:'mA',lsl:'300',usl:'450'}),newItem({name:'회전수',unit:'rpm',lsl:'2800',usl:'3200'}),newItem({name:'유량',unit:'L/min',lsl:'1.2',timed:true,dur:60}),newItem({name:'소음',unit:'dB(A)',usl:'45'})],
   data:{},created:Date.now(),updated:Date.now()});save();render()},
@@ -463,6 +490,7 @@ const ACT={
   toast('복제했어요 (측정값 제외) — 이름·Lot을 수정하세요');V.partId=c.id;V.stage=c.stages[0].id;render()},
  delPart(){const p=part();if(!confirm(`‘${p.name}’과 모든 측정값을 삭제할까요?`))return;S.parts=S.parts.filter(x=>x.id!==p.id);save();back()},
  pickItem:(el,id)=>{setItem(id);render()},
+ pickStage:(el,id)=>{V.stage=id;setItem(V.itemId);render()},
  key:el=>key(el.dataset.k),commit,undo,skip,
  cell(el){const i=+el.dataset.i,p=part(),it=item(),a=getArr(p,V.stage,it.id);if(i===V.sample&&a[i]){cellModal(i);return}V.sample=i;V.input='';render()},
  saveNote(el){const i=+el.dataset.i,p=part(),x=getArr(p,V.stage,V.itemId)[i];if(x){x.n=$('#cnote').value.trim();p.updated=Date.now();save()}closeModal();render()},
