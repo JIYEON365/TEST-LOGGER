@@ -1,0 +1,16 @@
+{
+  "name": "신뢰성 측정 기록",
+  "short_name": "측정기록",
+  "description": "부품 특성치 측정·판정·집계 앱",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b6bcb",
+  "theme_color": "#0b6bcb",
+  "lang": "ko",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

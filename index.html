@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b6bcb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="측정기록">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>신뢰성 측정 기록</title>
+<style>
+:root{--bg:#f3f5f8;--card:#fff;--tx:#18212c;--sub:#667085;--ln:#e2e6ec;--pri:#0b6bcb;--prit:#fff;--pri2:#e6f0fb;--ok:#13803b;--okb:#e5f5ea;--ng:#d42c1f;--ngb:#fdeceb;--run:#9a5b00;--runb:#fff4e0;--key:#fff;--keyfn:#e8ecf2;--shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e131a;--card:#17202b;--tx:#e7ecf2;--sub:#93a0b1;--ln:#283444;--pri:#4b9ff2;--prit:#06121f;--pri2:#13283e;--ok:#4cd480;--okb:#12301f;--ng:#ff7a70;--ngb:#3b1917;--run:#f2b552;--runb:#33270f;--key:#212c39;--keyfn:#2b3848;--shadow:none}}
+:root[data-theme=dark]{--bg:#0e131a;--card:#17202b;--tx:#e7ecf2;--sub:#93a0b1;--ln:#283444;--pri:#4b9ff2;--prit:#06121f;--pri2:#13283e;--ok:#4cd480;--okb:#12301f;--ng:#ff7a70;--ngb:#3b1917;--run:#f2b552;--runb:#33270f;--key:#212c39;--keyfn:#2b3848;--shadow:none}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation;border:0;background:none}
+.sub{color:var(--sub)}.sm{font-size:12px}.center{text-align:center}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));background:var(--bg);border-bottom:1px solid var(--ln)}
+.top.slim{padding:6px 8px;padding-top:calc(6px + env(safe-area-inset-top))}
+.brand{display:flex;gap:10px;align-items:center;flex:1}.brand small{display:block;color:var(--sub);font-size:12px}
+.logo{width:34px;height:34px;border-radius:9px;background:var(--pri);color:var(--prit);display:grid;place-items:center;font-size:20px;font-weight:700}
+.ttl1{flex:1;font-size:16px}.ttl{flex:1;min-width:0}.ttl b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ttl small{color:var(--sub)}
+.ib{min-width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:20px}
+.ib:active{background:var(--keyfn)}.ib.sm{min-width:32px;height:32px;font-size:13px;background:var(--keyfn)}.ib.dng{color:var(--ng)}
+.ib.live{background:var(--ng);color:#fff;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(212,44,31,.2)}}
+.wrap{max-width:760px;margin:0 auto;padding:12px 12px 110px}
+.card{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 10px;font-size:15px}.card h3 small{font-weight:400;color:var(--sub);font-size:12px}
+.row{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.pcard .meta{display:flex;flex-wrap:wrap;gap:6px 12px;color:var(--sub);font-size:12px;margin:6px 0}
+.prog{height:6px;background:var(--keyfn);border-radius:9px;overflow:hidden;margin:6px 0 4px}.prog i{display:block;height:100%;background:var(--pri)}
+.badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--keyfn);color:var(--sub);white-space:nowrap}
+.badge.ok{background:var(--okb);color:var(--ok)}.badge.ng{background:var(--ngb);color:var(--ng)}.badge.run{background:var(--runb);color:var(--run)}
+.search{width:100%;padding:11px 14px;border-radius:12px;border:1px solid var(--ln);background:var(--card);margin-bottom:10px;outline:none}
+.empty{text-align:center;padding:50px 10px}.empty .em{font-size:44px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:11px;background:var(--keyfn);font-weight:600}
+.btn:active{filter:brightness(.92)}.btn.pri{background:var(--pri);color:var(--prit)}.btn.big{width:100%;padding:15px;font-size:16px;border-radius:14px}.btn.sm{padding:7px 14px}.btn.dng{color:var(--ng)}
+.fabbar{position:fixed;left:0;right:0;bottom:0;padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 35%)}
+.fabbar>*{max-width:736px;margin:0 auto;display:flex}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;padding:8px 14px;border-radius:12px;background:var(--card);border:1px solid var(--ln);text-align:center;font-weight:600}
+.tab small{display:block;font-weight:400;font-size:11px;color:var(--sub)}.tab.on{background:var(--pri);color:var(--prit);border-color:var(--pri)}.tab.on small{color:inherit;opacity:.85}
+.verdict{padding:10px 14px;border-radius:12px;margin-bottom:10px;font-weight:700}
+.verdict.ok{background:var(--okb);color:var(--ok)}.verdict.ng{background:var(--ngb);color:var(--ng)}.verdict.run{background:var(--runb);color:var(--run)}
+.irow{display:flex;width:100%;align-items:center;gap:10px;text-align:left;background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:11px 12px;margin-bottom:7px}
+.irow .l{flex:1;min-width:0}.irow small{display:block;color:var(--sub);font-size:12px}.irow .m{text-align:right}.irow .m span{font-weight:700}
+.tm{font-size:11px;color:var(--pri);font-weight:600}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.acts .btn{padding:13px 8px}.acts .full{grid-column:1/-1}
+/* measure */
+.mwrap{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:760px;margin:0 auto}
+.mt{flex:1;min-width:0}.mt b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stsel{border:0;background:var(--pri2);color:var(--pri);font-weight:700;font-size:12px;border-radius:8px;padding:2px 6px;max-width:100%}
+.clock{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:var(--sub)}
+.ichips{display:flex;gap:6px;overflow-x:auto;padding:8px;flex:none;scrollbar-width:none;border-bottom:1px solid var(--ln)}.ichips::-webkit-scrollbar{display:none}
+.ichip{flex:none;padding:6px 12px;border-radius:10px;background:var(--card);border:1px solid var(--ln);font-weight:600;font-size:13px;text-align:center}
+.ichip small{display:block;font-weight:400;font-size:11px;color:var(--sub)}.ichip em{color:var(--ng);font-style:normal;font-weight:700}
+.ichip.done{border-color:var(--ok)}.ichip.on{background:var(--pri);color:var(--prit);border-color:var(--pri)}.ichip.on small,.ichip.on em{color:inherit}
+.mscroll{flex:1;overflow-y:auto;padding:8px 10px;min-height:0}
+.spec{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}.spec b{font-size:16px}
+.mini-st{font-size:12.5px;color:var(--sub);font-variant-numeric:tabular-nums}.mini-st b{color:var(--tx)}.ngt{color:var(--ng);font-style:normal;font-weight:700}
+.cells{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:8px}
+.cell{border-radius:9px;background:var(--card);border:1.5px solid var(--ln);padding:3px 2px 5px;text-align:center;min-width:0}
+.cell small{display:block;font-size:10px;color:var(--sub);line-height:1.2}.cell span{display:block;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell.ok{background:var(--okb);color:var(--ok);border-color:transparent}.cell.ng{background:var(--ngb);color:var(--ng);border-color:transparent}
+.cell.em span{color:var(--sub);font-weight:400}.cell.cur{border-color:var(--pri);box-shadow:0 0 0 2px var(--pri)}
+.tmr{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:8px 10px;margin-bottom:8px}
+.tmr.done{border-color:var(--ok);background:var(--okb)}
+.tleft{flex:1;min-width:0}.tmode{display:flex;gap:4px;flex-wrap:wrap}
+.seg{font-size:11px;padding:3px 8px;border-radius:7px;background:var(--keyfn);color:var(--sub);font-weight:600}.seg.on{background:var(--pri2);color:var(--pri)}.seg.dur{color:var(--tx)}
+.tdisp{font-variant-numeric:tabular-nums;font-weight:800;font-size:28px;letter-spacing:.5px;line-height:1.15;margin-top:2px}
+.tmr.big .tdisp{font-size:40px}
+.tbar{height:4px;background:var(--keyfn);border-radius:9px;overflow:hidden;margin-top:3px}.tbar i{display:block;height:100%;background:var(--pri);transition:width .1s linear}
+.tbtns{display:flex;gap:6px}.tb{width:46px;height:46px;border-radius:12px;background:var(--keyfn);font-size:17px;font-weight:700}.tb.pri{background:var(--pri);color:var(--prit)}
+.tmr.big .tb{width:54px;height:54px}
+.heard{font-size:12.5px;padding:7px 10px;border-radius:10px;background:var(--ngb);color:var(--ng);margin-bottom:8px}
+.dispbar{flex:none;padding:6px 12px 4px;border-top:1px solid var(--ln);background:var(--card)}
+.dlabel{font-size:12px;font-weight:700;color:var(--pri)}
+.disp{display:flex;align-items:baseline;justify-content:flex-end;gap:6px;font-variant-numeric:tabular-nums;font-size:34px;font-weight:800;min-height:46px;border-radius:10px;padding:0 6px;transition:background .2s}
+.disp .ph{color:var(--sub);opacity:.4}.disp .unit{font-size:15px;color:var(--sub);font-weight:600}
+.disp.pv-ng{color:var(--ng)}.disp.pv-ok{color:var(--ok)}
+.disp.flash-ok{background:var(--okb)}.disp.flash-ng{background:var(--ngb)}
+.pad{flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 8px;padding-bottom:calc(8px + env(safe-area-inset-bottom));background:var(--card)}
+.k{height:52px;border-radius:12px;background:var(--key);border:1px solid var(--ln);font-size:22px;font-weight:600;box-shadow:var(--shadow)}
+.k:active{transform:scale(.96);filter:brightness(.92)}.k.fn{background:var(--keyfn);font-size:17px}.k.w2{grid-column:span 2}.k.w3{grid-column:span 3}
+.k.ok{background:var(--pri);color:var(--prit);font-size:19px;font-weight:800;border-color:var(--pri)}
+@media (max-height:700px){.k{height:44px}.tdisp{font-size:24px}.tmr.big .tdisp{font-size:32px}.disp{font-size:28px;min-height:38px}}
+/* forms */
+.form label{display:block;font-size:12px;color:var(--sub);font-weight:600;margin-bottom:9px}
+.form input:not([type=checkbox]),.form textarea,.sheet select{display:block;width:100%;margin-top:3px;padding:10px 11px;border:1px solid var(--ln);border-radius:10px;background:var(--bg);font-size:15px;color:var(--tx);outline:none}
+.form input:focus,.form textarea:focus{border-color:var(--pri)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.srow{display:flex;gap:6px;align-items:center;margin-bottom:6px}.srow input{margin:0!important}
+.itrow{border:1px solid var(--ln);border-radius:12px;padding:10px;margin-bottom:8px;background:var(--bg)}
+.itrow input{background:var(--card)!important}
+.g-it{display:grid;grid-template-columns:1fr 92px;gap:6px}.g-it2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.g-it3{display:flex;align-items:center;gap:6px;margin-top:4px}.g-it3 .sp{flex:1}
+.mini{margin:0!important;font-size:11px!important}.mini input{padding:8px 10px!important}
+.inl{display:flex!important;align-items:center;gap:4px}.inl input{width:64px!important;margin:0!important}
+.ck{display:flex!important;align-items:center;gap:6px;margin:0!important;font-size:13px!important;color:var(--tx)!important}.ck input{width:18px;height:18px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{padding:6px 10px;border-radius:99px;background:var(--pri2);color:var(--pri);font-size:12.5px;font-weight:600}
+/* report */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.tbl th,.tbl td{padding:6px 4px;border-bottom:1px solid var(--ln);text-align:right;white-space:nowrap}.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl th{color:var(--sub);font-weight:600;font-size:11.5px}.tblw{overflow-x:auto}
+.up{color:var(--run)}.ng-c{color:var(--ng);font-weight:700}
+.chart{width:100%;height:auto;display:block;margin:6px 0 4px}
+.chart .gl{stroke:var(--ln)}.chart .ax{fill:var(--sub);font-size:9px}.chart .spec{stroke:var(--ng);stroke-dasharray:4 3}.chart .spl{fill:var(--ng);font-size:9px;font-weight:700}
+.chart .dok{fill:var(--pri);opacity:.75}.chart .dng{fill:var(--ng)}.chart .mean{stroke:var(--tx);stroke-width:2}
+/* modal/toast */
+#modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+#modal.hidden{display:none}
+.sheet{width:100%;max-width:560px;max-height:88vh;overflow-y:auto;background:var(--card);border-radius:18px 18px 0 0;padding:18px 16px;padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+.sheet h3{margin:0 0 12px}.sheet .btn{width:100%;margin-bottom:8px;justify-content:flex-start;padding:13px 14px}
+.sheet textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--ln);background:var(--bg);margin-bottom:10px}
+.tog{display:flex;align-items:center;justify-content:space-between;padding:10px 2px;border-bottom:1px solid var(--ln);gap:10px}
+.tog small{display:block;color:var(--sub);font-size:12px}.tog input{width:22px;height:22px;flex:none}
+@media (min-width:700px){#modal{align-items:center}.sheet{border-radius:18px}}
+#toast{position:fixed;left:50%;top:calc(118px + env(safe-area-inset-top));transform:translate(-50%,-260px);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:60;transition:transform .25s;max-width:90vw;text-align:center;pointer-events:none}
+#toast.show{transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal" class="hidden"></div>
+<div id="toast"></div>
+<script>
+'use strict';
+const VERSION='1.0.0';
+const KEY='coway-rel-log.v1';
+const $=s=>document.querySelector(s);
+const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>{if(v===''||v==null)return null;const n=parseFloat(v);return isFinite(n)?n:null};
+const fmt=(v,d=3)=>(v==null||!isFinite(v))?'–':String(+v.toFixed(d));
+const p2=n=>String(n).padStart(2,'0');
+const trunc=(s,n)=>s.length>n?s.slice(0,n-1)+'…':s;
+function fmtDate(t,short){if(!t)return'';const d=new Date(t);const s=`${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;return short?s:s+':'+p2(d.getSeconds())}
+function isoLocal(t){if(!t)return'';const d=new Date(t);return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`}
+function ymd(){const d=new Date();return `${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}`}
+
+const PRESETS=[
+ {name:'최소 동작전압',unit:'V'},{name:'소비전류',unit:'mA'},{name:'소비전력',unit:'W'},
+ {name:'회전수',unit:'rpm'},{name:'유량',unit:'L/min',timed:true,dur:60},{name:'UV 조사량',unit:'mW/cm²'},
+ {name:'소음',unit:'dB(A)'},{name:'저항',unit:'Ω'},{name:'절연저항',unit:'MΩ'},
+ {name:'누설전류',unit:'mA'},{name:'표면온도',unit:'℃'},{name:'압력',unit:'kPa'},{name:'동작시간',unit:'s'}
+];
+const STAGE_PRESETS=['초기','환경시험 후','내구시험 후','고온고습 후','열충격 후','진동 후','낙하 후','회복 후'];
+const DEF_SET={autoNext:true,beep:true,vib:true,awake:true,voiceAuto:true,theme:'auto'};
+
+/* ---------- storage ---------- */
+let S=load();
+function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+ d=d&&Array.isArray(d.parts)?d:{parts:[]};d.settings=Object.assign({},DEF_SET,d.settings||{});return d}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('⚠ 저장 실패 (저장공간 부족?) — 백업하세요')}}
+
+/* ---------- view state ---------- */
+const V={name:'home',partId:null,stage:null,itemId:null,sample:0,input:'',q:'',heard:''};
+const STK=[];let D=null;const UNDO=[];
+const part=()=>S.parts.find(p=>p.id===V.partId);
+const item=()=>{const p=part();return p&&p.items.find(i=>i.id===V.itemId)};
+function getArr(p,sid,iid){p.data=p.data||{};const s=p.data[sid]=p.data[sid]||{};let a=s[iid];
+ if(!Array.isArray(a))a=s[iid]=[];while(a.length<p.samples)a.push(null);if(a.length>p.samples)a.length=p.samples;return a}
+
+/* ---------- judging & stats ---------- */
+function judge(v,it){if(v==null)return null;const l=num(it.lsl),u=num(it.usl);if(l==null&&u==null)return'NA';
+ if(l!=null&&v<l)return'NG';if(u!=null&&v>u)return'NG';return'OK'}
+function specText(it){const l=num(it.lsl),u=num(it.usl),un=it.unit?' '+it.unit:'';
+ if(l!=null&&u!=null)return `기준 ${l} ~ ${u}${un}`;if(l!=null)return `기준 ≥ ${l}${un}`;if(u!=null)return `기준 ≤ ${u}${un}`;return `기준 없음${it.unit?' ('+it.unit+')':''}`}
+function stats(arr,it){const vs=(arr||[]).filter(x=>x&&x.v!=null).map(x=>x.v);const n=vs.length;if(!n)return{n:0,ng:0};
+ const mean=vs.reduce((a,b)=>a+b,0)/n,min=Math.min(...vs),max=Math.max(...vs);
+ const sd=n>1?Math.sqrt(vs.reduce((a,b)=>a+(b-mean)**2,0)/(n-1)):0;
+ const l=num(it.lsl),u=num(it.usl);let cpk=null;
+ if(sd>0){const c=[];if(u!=null)c.push((u-mean)/(3*sd));if(l!=null)c.push((mean-l)/(3*sd));if(c.length)cpk=Math.min(...c)}
+ return{n,mean,min,max,sd,cpk,range:max-min,ng:vs.filter(v=>judge(v,it)==='NG').length}}
+function progress(p,sid){let f=0,t=0,ng=0;(sid?p.stages.filter(s=>s.id===sid):p.stages).forEach(s=>p.items.forEach(it=>{const a=getArr(p,s.id,it.id);t+=a.length;a.forEach(x=>{if(x){f++;if(judge(x.v,it)==='NG')ng++}})}));
+ return{pct:t?Math.round(f/t*100):0,ng,f,t}}
+
+/* ---------- feedback ---------- */
+let AC;function unlockAudio(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}}
+function beep(f=880,d=.12,vol=.25){if(!S.settings.beep)return;try{unlockAudio();const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;
+ g.gain.setValueAtTime(vol,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g).connect(AC.destination);o.start();o.stop(AC.currentTime+d+.03)}catch(e){}}
+function vib(p){if(S.settings.vib&&navigator.vibrate)try{navigator.vibrate(p)}catch(e){}}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+let WL=null;async function wake(on){try{if(on&&S.settings.awake&&'wakeLock'in navigator){if(!WL){WL=await navigator.wakeLock.request('screen');WL.addEventListener('release',()=>{WL=null})}}else if(!on&&WL){await WL.release();WL=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&V.name==='measure')wake(true)});
+function applyTheme(){const t=S.settings.theme;if(t==='auto')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t}
+
+/* ---------- timer ---------- */
+const T={mode:'down',dur:60,run:false,t0:0,acc:0,done:false,lastS:null};
+const tEl=()=>T.acc+(T.run?(performance.now()-T.t0)/1000:0);
+function tStr(){const el=tEl();const x=T.mode==='down'?Math.max(0,Math.ceil((T.dur-el)*10-1e-6)):Math.floor(el*10);const m=Math.floor(x/600);return `${p2(m)}:${((x%600)/10).toFixed(1).padStart(4,'0')}`}
+const tPct=()=>T.mode==='down'?Math.min(100,tEl()/T.dur*100):(tEl()%60)/60*100;
+function tStart(){unlockAudio();if(T.run){T.acc=tEl();T.run=false}else{if(T.done)tResetRaw();T.t0=performance.now();T.run=true;beep(880,.08)}updTimer(true)}
+function tResetRaw(){T.run=false;T.acc=0;T.done=false;T.lastS=null}
+function tReset(){tResetRaw();updTimer(true)}
+function updTimer(full){const a=$('#tmr');if(!a)return;a.textContent=tStr();const b=$('#tbar');if(b)b.style.width=tPct()+'%';
+ if(full){const c=$('#tbtn');if(c)c.textContent=T.run?'❚❚':'▶';const w=$('.tmr');if(w)w.classList.toggle('done',T.done)}}
+const clockStr=()=>{const d=new Date();return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`};
+setInterval(()=>{if(V.name!=='measure')return;const c=$('#clock');if(c)c.textContent=clockStr();
+ if(T.run&&T.mode==='down'){const rem=T.dur-tEl();if(rem<=0){T.run=false;T.acc=T.dur;T.done=true;beep(1000,.7,.35);vib([300,120,300]);toast(`⏱ ${T.dur}초 완료 — 값을 입력하세요`);updTimer(true);return}
+  const s=Math.ceil(rem);if(s<=3&&s!==T.lastS){T.lastS=s;beep(660,.1)}}
+ updTimer()},100);
+
+/* ---------- navigation ---------- */
+const snap=()=>({name:V.name,partId:V.partId,stage:V.stage,itemId:V.itemId,sample:V.sample});
+function go(name,o={}){STK.push(snap());history.pushState({n:STK.length},'');Object.assign(V,{name},o);if(name==='measure')setItem(V.itemId);render();window.scrollTo(0,0)}
+window.addEventListener('popstate',()=>{closeModal();const s=STK.pop();if(s)Object.assign(V,s);else V.name='home';render()});
+function back(){if(STK.length)history.back();else{V.name='home';render()}}
+
+/* ---------- render ---------- */
+function render(){
+ if(V.name!=='measure'){if(voiceOn)stopVoice();wake(false)}else wake(true);
+ const app=$('#app');const sc=$('#ichips')?.scrollLeft;
+ const R={home:renderHome,part:renderPart,edit:renderEdit,measure:renderMeasure,report:renderReport}[V.name]||renderHome;
+ app.innerHTML=R();
+ if(V.name==='measure'){const ic=$('#ichips');if(ic&&sc!=null)ic.scrollLeft=sc;$('.ichip.on')?.scrollIntoView({inline:'nearest',block:'nearest'});
+  const cc=$('.cell.cur'),ms=$('#mscroll');if(cc&&ms){const r=cc.getBoundingClientRect(),m=ms.getBoundingClientRect();if(r.bottom>m.bottom||r.top<m.top)cc.scrollIntoView({block:'nearest'})}updateDisp()}
+}
+
+function renderHome(){
+ return `<header class="top"><div class="brand"><span class="logo">◎</span><div><b>신뢰성 측정 기록</b><small>부품 특성치 측정 · 판정 · 집계</small></div></div><button class="ib" data-act="settings" aria-label="설정">⚙︎</button></header>
+ <main class="wrap">${S.parts.length?`<input class="search" type="search" placeholder="부품명 · 코드 · 공급사 검색" data-bind="search" value="${esc(V.q)}">`:''}<div id="list">${homeList()}</div></main>
+ <div class="fabbar"><div><button class="btn pri big" data-act="newPart">＋ 새 부품 등록</button></div></div>`}
+function homeList(){
+ if(!S.parts.length)return `<div class="empty"><div class="em">📋</div><p><b>등록된 부품이 없어요</b></p><p class="sub">부품과 측정 항목(기준값)을 등록하면<br>한 화면에서 입력 · 타이머 · 판정까지 끝낼 수 있어요.</p><button class="btn" data-act="demo">예시 부품 불러오기</button></div>`;
+ const q=V.q.toLowerCase();const ps=S.parts.filter(p=>!q||[p.name,p.code,p.maker,p.lot].join(' ').toLowerCase().includes(q)).sort((a,b)=>b.updated-a.updated);
+ if(!ps.length)return `<p class="sub center">검색 결과가 없어요</p>`;
+ return ps.map(p=>{const pr=progress(p);return `<button class="card pcard" data-act="openPart" data-id="${p.id}">
+ <div class="row"><b>${esc(p.name)}</b>${pr.ng?`<span class="badge ng">NG ${pr.ng}</span>`:pr.pct===100?'<span class="badge ok">완료</span>':''}</div>
+ <div class="sub sm">${esc([p.code,p.maker,p.lot].filter(Boolean).join(' · '))||'&nbsp;'}</div>
+ <div class="meta"><span>n=${p.samples}</span><span>항목 ${p.items.length}개</span><span>${p.stages.map(s=>esc(s.name)).join(' → ')}</span></div>
+ <div class="prog"><i style="width:${pr.pct}%"></i></div><div class="sub sm">${pr.pct}% 완료 · 최근 ${fmtDate(p.updated,true)}</div></button>`}).join('')}
+
+function renderPart(){
+ const p=part();if(!p){V.name='home';return renderHome()}
+ if(!p.stages.some(s=>s.id===V.stage))V.stage=p.stages[0].id;
+ const tabs=p.stages.map(s=>{const pr=progress(p,s.id);return `<button class="tab ${s.id===V.stage?'on':''}" data-act="stage" data-id="${s.id}">${esc(s.name)}<small>${pr.pct}%${pr.ng?' · NG '+pr.ng:''}</small></button>`}).join('');
+ const pr=progress(p,V.stage);
+ const verdict=pr.ng?`<div class="verdict ng">✗ 기준 이탈 ${pr.ng}건 — 불합격 항목 있음</div>`:pr.pct===100?`<div class="verdict ok">✓ 이 단계 전 항목 기준 내 (합격)</div>`:`<div class="verdict run">측정 진행 중 · ${pr.f}/${pr.t} (${pr.pct}%)</div>`;
+ const rows=p.items.map(it=>{const st=stats(getArr(p,V.stage,it.id),it);const done=st.n===p.samples;
+  const b=!st.n?'<span class="badge">미측정</span>':st.ng?`<span class="badge ng">NG ${st.ng}</span>`:done?'<span class="badge ok">OK</span>':'<span class="badge run">진행중</span>';
+  return `<button class="irow" data-act="measureItem" data-id="${it.id}"><div class="l"><b>${esc(it.name)}</b>${it.timed?` <span class="tm">⏱${it.dur}s</span>`:''}<small>${esc(specText(it))}</small></div>
+  <div class="m"><span>${st.n}/${p.samples}</span><small>${st.n?`x̄ ${fmt(st.mean)} · ${fmt(st.min)}~${fmt(st.max)}`:''}</small></div><div>${b}</div></button>`}).join('');
+ return `<header class="top"><button class="ib" data-act="back">‹</button><div class="ttl"><b>${esc(p.name)}</b><small>${esc([p.code,p.maker,p.lot].filter(Boolean).join(' · '))||'n='+p.samples}</small></div><button class="ib" data-act="editPart" aria-label="설정">✎</button></header>
+ <main class="wrap"><div class="tabs">${tabs}</div>${verdict}${rows}
+ ${p.note?`<p class="sub sm">📝 ${esc(p.note)}</p>`:''}
+ <div class="acts"><button class="btn pri full" data-act="startMeasure">▶ 측정 시작 (${esc(p.stages.find(s=>s.id===V.stage).name)})</button>
+ <button class="btn" data-act="report">📊 결과 · 단계 비교</button><button class="btn" data-act="exportMenu">⤓ 내보내기</button>
+ <button class="btn" data-act="dupPart">⧉ 복제 (새 Lot)</button><button class="btn dng" data-act="delPart">🗑 삭제</button></div></main>`}
+
+const KEYPAD=`<button class="k" data-act="key" data-k="7">7</button><button class="k" data-act="key" data-k="8">8</button><button class="k" data-act="key" data-k="9">9</button><button class="k fn" data-act="key" data-k="⌫">⌫</button>
+<button class="k" data-act="key" data-k="4">4</button><button class="k" data-act="key" data-k="5">5</button><button class="k" data-act="key" data-k="6">6</button><button class="k fn" data-act="key" data-k="C">C</button>
+<button class="k" data-act="key" data-k="1">1</button><button class="k" data-act="key" data-k="2">2</button><button class="k" data-act="key" data-k="3">3</button><button class="k fn" data-act="key" data-k="±">±</button>
+<button class="k w2" data-act="key" data-k="0">0</button><button class="k" data-act="key" data-k=".">.</button><button class="k fn" data-act="skip">다음▷</button>
+<button class="k fn" data-act="undo">↶ 취소</button><button class="k ok w3" data-act="commit">기록 ⏎</button>`;
+
+function timerHTML(it){const dn=T.mode==='down';
+ return `<div class="tmr ${it.timed?'big':''} ${T.done?'done':''}"><div class="tleft"><div class="tmode">
+ <button class="seg ${dn?'on':''}" data-act="tMode" data-m="down">카운트다운</button><button class="seg ${!dn?'on':''}" data-act="tMode" data-m="up">스톱워치</button>
+ ${dn?`<button class="seg dur" data-act="tDur">${T.dur}초 ✎</button>`:''}</div>
+ <div class="tdisp" id="tmr">${tStr()}</div><div class="tbar"><i id="tbar" style="width:${tPct()}%"></i></div></div>
+ <div class="tbtns"><button class="tb pri" id="tbtn" data-act="tStart">${T.run?'❚❚':'▶'}</button><button class="tb" data-act="tReset">↺</button>${!dn?'<button class="tb" data-act="tUse" title="경과 시간을 값으로 입력">⤓s</button>':''}</div></div>`}
+
+function renderMeasure(){
+ const p=part(),it=item();if(!p||!it){V.name='home';return renderHome()}
+ const arr=getArr(p,V.stage,it.id),st=stats(arr,it);if(V.sample==null||V.sample>=p.samples)V.sample=0;const cur=arr[V.sample];
+ const chips=p.items.map(x=>{const a=getArr(p,V.stage,x.id),f=a.filter(Boolean).length,ng=a.filter(y=>y&&judge(y.v,x)==='NG').length;
+  return `<button class="ichip ${x.id===it.id?'on':''} ${f===p.samples?'done':''}" data-act="pickItem" data-id="${x.id}">${esc(x.name)}<small>${f}/${p.samples}${ng?` <em>NG${ng}</em>`:''}</small></button>`}).join('');
+ const cells=arr.map((x,i)=>{const j=x?judge(x.v,it):'';return `<button class="cell ${i===V.sample?'cur':''} ${x?(j==='NG'?'ng':j==='OK'?'ok':''):'em'}" data-act="cell" data-i="${i}"><small>${i+1}${x&&x.n?' ✎':''}</small><span>${x?fmt(x.v,4):'·'}</span></button>`}).join('');
+ return `<div class="mwrap"><header class="top slim"><button class="ib" data-act="back">‹</button>
+ <div class="mt"><b>${esc(p.name)}</b><select class="stsel" data-bind="stageSel">${p.stages.map(s=>`<option value="${s.id}" ${s.id===V.stage?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
+ <span class="clock" id="clock">${clockStr()}</span><button class="ib ${voiceOn?'live':''}" data-act="voice" aria-label="음성 입력">🎤</button></header>
+ <div class="ichips" id="ichips">${chips}</div>
+ <div class="mscroll" id="mscroll"><div class="spec"><div><b>${esc(it.name)}</b> <span class="sub sm">${esc(specText(it))}</span></div>
+ <div class="mini-st">${st.n?`x̄ <b>${fmt(st.mean)}</b> · min <b>${fmt(st.min)}</b> · max <b>${fmt(st.max)}</b>${st.n>1?` · σ ${fmt(st.sd)}`:''}${st.ng?` · <em class="ngt">NG ${st.ng}</em>`:''}`:'측정값 없음 — 아래 키패드로 입력'}</div></div>
+ <div class="cells">${cells}</div>${timerHTML(it)}
+ ${voiceOn?`<div class="heard">🎤 듣는 중 · ${V.heard?`마지막 인식: “${esc(V.heard)}”`:'숫자를 말하세요 (예: “사 점 팔”, “4.8”) · “취소” “다음” “시작” “정지”'}</div>`:''}</div>
+ <div class="dispbar"><div class="dlabel">시료 #${V.sample+1}${cur?` <span class="sub">· 기존 ${fmt(cur.v,4)} (${fmtDate(cur.t)}) → 입력 시 덮어씀</span>`:''}</div><div id="disp" class="disp"></div></div>
+ <div class="pad">${KEYPAD}</div></div>`}
+
+function updateDisp(){const d=$('#disp');if(!d)return;const it=item();const v=num(V.input);
+ d.innerHTML=`${V.input?esc(V.input):'<span class="ph">0</span>'}<span class="unit">${esc(it?.unit||'')}</span>`;
+ d.classList.remove('pv-ok','pv-ng');if(v!=null&&it){const j=judge(v,it);if(j==='NG')d.classList.add('pv-ng');else if(j==='OK')d.classList.add('pv-ok')}
+ if(V.flash){d.classList.add('flash-'+(V.flash==='NG'?'ng':'ok'));const f=V.flash;V.flash=null;setTimeout(()=>d.classList.remove('flash-ok','flash-ng'),f==='NG'?900:450)}}
+
+function setItem(id){const p=part();if(!p)return;const it=p.items.find(i=>i.id===id)||p.items[0];V.itemId=it.id;const a=getArr(p,V.stage,it.id);
+ const e=a.findIndex(x=>!x);V.sample=e>=0?e:0;V.input='';
+ if(!T.run){if(it.timed){T.mode='down';T.dur=it.dur||60}tResetRaw()}}
+
+function key(k){let s=V.input;
+ if(/^\d$/.test(k)){if(s.replace(/[-.]/g,'').length<12)s=(s==='0'?'':s==='-0'?'-':s)+k}
+ else if(k==='.'){if(!s.includes('.'))s=(s===''||s==='-'?s+'0':s)+'.'}
+ else if(k==='±')s=s.startsWith('-')?s.slice(1):'-'+s;
+ else if(k==='⌫')s=s.slice(0,-1);else if(k==='C')s='';
+ V.input=s;vib(8);updateDisp()}
+
+function commit(){const v=parseFloat(V.input);if(!isFinite(v)){toast('값을 입력하세요');return}
+ const p=part(),it=item(),arr=getArr(p,V.stage,it.id),i=V.sample;
+ UNDO.push({pid:p.id,sid:V.stage,iid:it.id,i,prev:arr[i]?{...arr[i]}:null});if(UNDO.length>100)UNDO.shift();
+ arr[i]={v,t:Date.now(),n:arr[i]?.n||''};p.updated=Date.now();save();
+ const j=judge(v,it);if(j==='NG'){vib([90,60,90,60,250]);beep(300,.3,.3);toast(`⚠ #${i+1} ${fmt(v,4)} 기준 이탈 (NG)`)}else{vib(25);beep(1300,.05,.15)}
+ V.flash=j;V.input='';
+ let nx=arr.findIndex((x,k)=>k>i&&!x);if(nx<0)nx=arr.findIndex(x=>!x);
+ if(nx>=0)V.sample=nx;
+ else{beep(1500,.12);if(S.settings.autoNext){const idx=p.items.findIndex(x=>x.id===it.id);const rest=[...p.items.slice(idx+1),...p.items.slice(0,idx)];
+  const nit=rest.find(x=>getArr(p,V.stage,x.id).some(y=>!y));if(nit){setItem(nit.id);toast(`✓ ${it.name} 완료 → 다음: ${nit.name}`)}else toast(`✓ 이 단계 전 항목 측정 완료!`)}else toast(`✓ ${it.name} ${p.samples}개 측정 완료`)}
+ render()}
+function undo(){const u=UNDO.pop();if(!u){toast('되돌릴 기록이 없어요');return}const p=S.parts.find(x=>x.id===u.pid);if(!p)return;
+ getArr(p,u.sid,u.iid)[u.i]=u.prev;p.updated=Date.now();save();V.partId=p.id;V.stage=u.sid;V.itemId=u.iid;V.sample=u.i;V.input='';toast(`↶ #${u.i+1} 입력 취소`);render()}
+function skip(){const p=part();V.sample=(V.sample+1)%p.samples;V.input='';render()}
+
+/* ---------- voice ---------- */
+let REC=null,voiceOn=false;
+const DIG={'영':0,'공':0,'일':1,'이':2,'삼':3,'사':4,'오':5,'육':6,'륙':6,'칠':7,'팔':8,'구':9};
+function koInt(s){if(/^\d+$/.test(s))return+s;let tot=0,sec=0,n=0,has=false;
+ for(const ch of s){if(DIG[ch]!=null){n=DIG[ch];has=true}else if(/\d/.test(ch)){n=n*10+(+ch);has=true}
+  else if(ch==='십'||ch==='백'||ch==='천'){sec+=(has?n:1)*({십:10,백:100,천:1000}[ch]);n=0;has=false}
+  else if(ch==='만'){tot+=((sec+n)||1)*10000;sec=0;n=0;has=false}else return null}
+ return tot+sec+n}
+function parseSpoken(c){let s=c.replace(/마이너스|minus/gi,'-').replace(/[쩜점]/g,'.').replace(/,/g,'');
+ s=s.replace(/[^0-9.\-영공일이삼사오육륙칠팔구십백천만]/g,'');if(!s||s==='-'||s==='.')return null;
+ if(/^-?\d*\.?\d+$/.test(s))return parseFloat(s);
+ let neg=false;if(s[0]==='-'){neg=true;s=s.slice(1)}const parts=s.split('.');if(parts.length>2)return null;
+ const I=koInt(parts[0]||'영');if(I==null)return null;let Dd='';
+ for(const ch of parts[1]||''){const d=DIG[ch]!=null?DIG[ch]:(/\d/.test(ch)?+ch:null);if(d==null)return null;Dd+=d}
+ const v=parseFloat(I+(Dd?'.'+Dd:''));return isFinite(v)?(neg?-v:v):null}
+function toggleVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){toast('이 브라우저는 음성 입력을 지원하지 않아요 (Chrome/Safari 최신 버전)');return}
+ if(voiceOn){stopVoice();render();return}
+ REC=new SR();REC.lang='ko-KR';REC.continuous=true;REC.interimResults=false;REC.maxAlternatives=1;
+ REC.onresult=e=>{for(let k=e.resultIndex;k<e.results.length;k++)if(e.results[k].isFinal)handleSpeech(e.results[k][0].transcript)};
+ REC.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){voiceOn=false;toast('마이크 권한을 허용해 주세요');render()}};
+ REC.onend=()=>{if(voiceOn&&V.name==='measure')setTimeout(()=>{try{REC.start()}catch(e){}},150)};
+ voiceOn=true;V.heard='';try{REC.start()}catch(e){}unlockAudio();render();toast('🎤 숫자를 말하면 바로 기록돼요')}
+function stopVoice(){voiceOn=false;try{REC&&REC.stop()}catch(e){}}
+function handleSpeech(t){if(V.name!=='measure')return;const s=t.trim(),c=s.replace(/\s/g,'');V.heard=s;
+ if(/취소|되돌|지워/.test(c))return undo();if(/^(다음|넘겨|스킵|패스)/.test(c))return skip();
+ if(/시작|스타트/.test(c)){if(!T.run)tStart();return render()}if(/정지|스톱|멈춰|중지/.test(c)){if(T.run)tStart();return render()}
+ if(/리셋|초기화/.test(c)){tResetRaw();return render()}
+ const v=parseSpoken(c);if(v==null){toast(`“${s}” — 숫자로 인식하지 못했어요`);return render()}
+ V.input=String(v);if(S.settings.voiceAuto)commit();else{render()}}
+
+/* ---------- editor ---------- */
+function newItem(o={}){return Object.assign({id:uid(),name:'',unit:'',lsl:'',usl:'',timed:false,dur:60},o)}
+function openEditor(p){D=p?JSON.parse(JSON.stringify({id:p.id,name:p.name,code:p.code||'',maker:p.maker||'',lot:p.lot||'',note:p.note||'',samples:p.samples,stages:p.stages,items:p.items})):
+ {_new:true,id:uid(),name:'',code:'',maker:'',lot:'',note:'',samples:10,stages:[{id:uid(),name:'초기'},{id:uid(),name:'환경시험 후'},{id:uid(),name:'내구시험 후'}],items:[]};go('edit')}
+function renderEdit(){if(!D){V.name='home';return renderHome()}
+ const items=D.items.map((it,i)=>`<div class="itrow"><div class="g-it"><input data-bind="it.${i}.name" value="${esc(it.name)}" placeholder="항목명 (예: 최소 동작전압)"><input data-bind="it.${i}.unit" value="${esc(it.unit)}" placeholder="단위"></div>
+ <div class="g-it2"><label class="mini">하한 (LSL)<input inputmode="decimal" data-bind="it.${i}.lsl" value="${esc(it.lsl)}" placeholder="없음"></label><label class="mini">상한 (USL)<input inputmode="decimal" data-bind="it.${i}.usl" value="${esc(it.usl)}" placeholder="없음"></label></div>
+ <div class="g-it3"><label class="ck"><input type="checkbox" data-bind="it.${i}.timed" ${it.timed?'checked':''}>⏱ 타이머 측정</label>${it.timed?`<label class="mini inl"><input type="number" inputmode="numeric" min="1" data-bind="it.${i}.dur" value="${it.dur||60}">초</label>`:''}
+ <span class="sp"></span><button class="ib sm" data-act="itMv" data-id="${i}" data-d="-1">▲</button><button class="ib sm" data-act="itMv" data-id="${i}" data-d="1">▼</button><button class="ib sm dng" data-act="itDel" data-id="${i}">✕</button></div></div>`).join('');
+ const stages=D.stages.map((s,i)=>`<div class="srow"><input data-bind="sg.${i}" value="${esc(s.name)}" placeholder="단계명"><button class="ib sm" data-act="sgMv" data-id="${i}">▲</button><button class="ib sm dng" data-act="sgDel" data-id="${i}">✕</button></div>`).join('');
+ return `<header class="top"><button class="ib" data-act="back">✕</button><b class="ttl1">${D._new?'새 부품 등록':'부품 설정'}</b><button class="btn pri sm" data-act="saveEdit">저장</button></header>
+ <main class="wrap form"><section class="card"><h3>기본 정보</h3>
+ <label>부품명 *<input data-bind="d.name" value="${esc(D.name)}" placeholder="예: 정수 펌프 모터"></label>
+ <div class="g2"><label>부품코드 / 모델<input data-bind="d.code" value="${esc(D.code)}"></label><label>공급사<input data-bind="d.maker" value="${esc(D.maker)}"></label></div>
+ <div class="g2"><label>시료 수 (n)<input type="number" inputmode="numeric" min="1" max="200" data-bind="d.samples" value="${esc(D.samples)}"></label><label>Lot / 시험번호<input data-bind="d.lot" value="${esc(D.lot)}"></label></div>
+ <label>메모<textarea rows="2" data-bind="d.note">${esc(D.note)}</textarea></label></section>
+ <section class="card"><h3>시험 단계</h3>${stages}<div class="chips">${STAGE_PRESETS.filter(n=>!D.stages.some(s=>s.name===n)).map(n=>`<button class="chip" data-act="sgAdd" data-n="${n}">+ ${n}</button>`).join('')}<button class="chip" data-act="sgAdd">+ 직접 입력</button></div></section>
+ <section class="card"><h3>측정 항목 <small>· 기준값을 비우면 판정 없이 기록만</small></h3>${items||'<p class="sub sm">아래에서 항목을 추가하세요</p>'}
+ <p class="sub sm" style="margin:10px 0 6px">빠른 추가</p><div class="chips">${PRESETS.map((x,i)=>`<button class="chip" data-act="itPreset" data-id="${i}">+ ${x.name}</button>`).join('')}<button class="chip" data-act="itAdd">+ 빈 항목</button></div></section>
+ ${D._new?'':'<p class="sub sm center">단계/항목을 삭제하거나 시료 수를 줄이면 해당 측정값도 삭제돼요.</p>'}</main>`}
+function saveEdit(){const name=(D.name||'').trim();if(!name)return toast('부품명을 입력하세요');
+ const items=D.items.filter(i=>(i.name||'').trim());if(!items.length)return toast('측정 항목을 1개 이상 추가하세요');
+ const stages=D.stages.filter(s=>(s.name||'').trim());if(!stages.length)return toast('시험 단계를 1개 이상 추가하세요');
+ const n=Math.max(1,Math.min(200,parseInt(D.samples)||10));
+ for(const it of items){it.name=it.name.trim();it.unit=(it.unit||'').trim();it.dur=Math.max(1,parseInt(it.dur)||60);it.timed=!!it.timed;
+  const l=num(it.lsl),u=num(it.usl);if(l!=null&&u!=null&&l>u)return toast(`${it.name}: 하한이 상한보다 커요`);it.lsl=l==null?'':String(l);it.usl=u==null?'':String(u)}
+ const old=S.parts.find(x=>x.id===D.id);const src=old?old.data||{}:{};const keepS=new Set(stages.map(s=>s.id)),keepI=new Set(items.map(i=>i.id));
+ let lost=0;const data={};
+ for(const sid of Object.keys(src))for(const iid of Object.keys(src[sid])){const a=src[sid][iid]||[];if(!keepS.has(sid)||!keepI.has(iid)){lost+=a.filter(Boolean).length;continue}
+  lost+=a.slice(n).filter(Boolean).length;(data[sid]=data[sid]||{})[iid]=a.slice(0,n)}
+ if(lost&&!confirm(`측정값 ${lost}개가 삭제됩니다. 계속할까요?`))return;
+ const obj={id:D.id,name,code:D.code.trim(),maker:D.maker.trim(),lot:D.lot.trim(),note:D.note.trim(),samples:n,stages:stages.map(s=>({id:s.id,name:s.name.trim()})),
+  items:items.map(({id,name,unit,lsl,usl,timed,dur})=>({id,name,unit,lsl,usl,timed,dur})),data,created:old?.created||Date.now(),updated:Date.now()};
+ if(old)Object.assign(old,obj);else S.parts.push(obj);save();toast('저장했어요');
+ const wasNew=D._new;D=null;if(wasNew){V.name='part';V.partId=obj.id;V.stage=obj.stages[0].id;render()}else back()}
+
+/* ---------- report ---------- */
+function chart(p,it){const W=320,H=150,L=40,R=8,Tp=10,B=22;
+ const groups=p.stages.map(s=>getArr(p,s.id,it.id).map(x=>x?x.v:null));const all=groups.flat().filter(v=>v!=null);if(!all.length)return'';
+ const l=num(it.lsl),u=num(it.usl),ex=[l,u].filter(v=>v!=null);let lo=Math.min(...all,...ex),hi=Math.max(...all,...ex);
+ if(lo===hi){lo-=1;hi+=1}const pd=(hi-lo)*.12;lo-=pd;hi+=pd;const y=v=>(Tp+(H-Tp-B)*(1-(v-lo)/(hi-lo))).toFixed(1);const gw=(W-L-R)/groups.length;
+ let s=`<svg viewBox="0 0 ${W} ${H}" class="chart" role="img">`;
+ for(let k=0;k<=2;k++){const v=lo+(hi-lo)*k/2;s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" class="gl"/><text x="${L-4}" y="${+y(v)+3}" class="ax" text-anchor="end">${fmt(v,2)}</text>`}
+ [['LSL',l],['USL',u]].forEach(([nm,v])=>{if(v!=null)s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" class="spec"/><text x="${W-R}" y="${+y(v)-3}" class="spl" text-anchor="end">${nm} ${v}</text>`});
+ groups.forEach((g,gi)=>{const cx=L+gw*(gi+.5),m=g.length,vs=g.filter(v=>v!=null);
+  g.forEach((v,k)=>{if(v==null)return;const jx=cx+(m>1?(k/(m-1)-.5)*gw*.55:0);s+=`<circle cx="${jx.toFixed(1)}" cy="${y(v)}" r="3" class="${judge(v,it)==='NG'?'dng':'dok'}"/>`});
+  if(vs.length){const mn=vs.reduce((a,b)=>a+b,0)/vs.length;s+=`<line x1="${cx-gw*.35}" x2="${cx+gw*.35}" y1="${y(mn)}" y2="${y(mn)}" class="mean"/>`}
+  s+=`<text x="${cx}" y="${H-6}" class="ax" text-anchor="middle">${esc(trunc(p.stages[gi].name,9))}</text>`});return s+'</svg>'}
+function summaryRows(p){const rows=[];p.items.forEach(it=>{let base=null;p.stages.forEach((s,si)=>{const st=stats(getArr(p,s.id,it.id),it);
+ if(si===0)base=st.n?st.mean:null;const ch=(si>0&&base&&st.n)?(st.mean-base)/Math.abs(base)*100:null;
+ const verdict=!st.n?'미측정':st.ng?'불합격':st.n<p.samples?'진행중':(num(it.lsl)==null&&num(it.usl)==null?'기준없음':'합격');
+ rows.push({it,s,st,ch,verdict})})});return rows}
+function renderReport(){const p=part();if(!p){V.name='home';return renderHome()}
+ const rows=summaryRows(p);
+ const cards=p.items.map(it=>{const rs=rows.filter(r=>r.it===it);
+  return `<section class="card"><div class="row"><b>${esc(it.name)}</b><span class="sub sm">${esc(specText(it))}</span></div>${chart(p,it)}
+  <div class="tblw"><table class="tbl"><tr><th>단계</th><th>n</th><th>평균</th><th>최소</th><th>최대</th><th>σ</th><th>Cpk</th><th>NG</th><th>초기대비</th></tr>
+  ${rs.map(r=>`<tr><td>${esc(r.s.name)}</td><td>${r.st.n}</td><td><b>${fmt(r.st.mean)}</b></td><td>${fmt(r.st.min)}</td><td>${fmt(r.st.max)}</td><td>${r.st.n>1?fmt(r.st.sd):'–'}</td><td>${r.st.cpk!=null?fmt(r.st.cpk,2):'–'}</td><td class="${r.st.ng?'ng-c':''}">${r.st.n?r.st.ng:'–'}</td><td class="${r.ch!=null&&Math.abs(r.ch)>=10?'up':''}">${r.ch!=null?(r.ch>0?'+':'')+r.ch.toFixed(1)+'%':'–'}</td></tr>`).join('')}</table></div></section>`}).join('');
+ return `<header class="top"><button class="ib" data-act="back">‹</button><div class="ttl"><b>결과 · 단계 비교</b><small>${esc(p.name)} · n=${p.samples}</small></div><button class="ib" data-act="exportMenu" aria-label="내보내기">⤓</button></header>
+ <main class="wrap"><p class="sub sm">● 측정값 · ━ 평균 · 빨간 점선 기준(LSL/USL) · 초기대비 ±10% 이상은 주황색 표시</p>${cards}</main>`}
+
+/* ---------- export ---------- */
+const csvCell=v=>{const s=String(v??'');return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+const toCSV=rows=>rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
+function rawTable(p){const out=[['부품명','부품코드','공급사','Lot','시험단계','항목','단위','하한(LSL)','상한(USL)','시료번호','측정값','판정','측정일시','메모']];
+ p.stages.forEach(s=>p.items.forEach(it=>getArr(p,s.id,it.id).forEach((x,i)=>out.push([p.name,p.code,p.maker,p.lot,s.name,it.name,it.unit,it.lsl,it.usl,i+1,x?x.v:'',x?(judge(x.v,it)==='NA'?'':judge(x.v,it)):'',x?isoLocal(x.t):'',x?x.n:''])))) ;return out}
+function sumTable(p){const out=[['부품명','시험단계','항목','단위','하한(LSL)','상한(USL)','n','평균','최소','최대','표준편차','범위','Cpk','NG수','판정','초기대비 변화율(%)']];
+ summaryRows(p).forEach(r=>{const st=r.st,f=v=>st.n?fmt(v,4):'';out.push([p.name,r.s.name,r.it.name,r.it.unit,r.it.lsl,r.it.usl,st.n,f(st.mean),f(st.min),f(st.max),st.n>1?fmt(st.sd,4):'',f(st.range),st.cpk!=null?fmt(st.cpk,2):'',st.n?st.ng:'',r.verdict,r.ch!=null?r.ch.toFixed(2):''])});return out}
+function download(name,text,type='text/csv;charset=utf-8'){const b=new Blob([(type.includes('csv')?'\ufeff':'')+text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);toast('저장: '+name)}
+async function shareFile(name,text,type){try{const f=new File([(type.includes('csv')?'\ufeff':'')+text],name,{type});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}
+ await navigator.share({title:name,text});}catch(e){if(e.name!=='AbortError')toast('공유를 사용할 수 없어요 — 다운로드를 이용하세요')}}
+async function copyText(t){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast('복사했어요 — 엑셀에 붙여넣기 하세요')}
+const safeName=s=>s.replace(/[\\/:*?"<>|]/g,'_');
+
+/* ---------- modal ---------- */
+function modal(h){const m=$('#modal');m.innerHTML=`<div class="sheet">${h}</div>`;m.classList.remove('hidden')}
+function closeModal(){const m=$('#modal');m.classList.add('hidden');m.innerHTML=''}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+function settingsModal(){const s=S.settings,tg=(k,t,d)=>`<label class="tog"><span>${t}${d?`<small>${d}</small>`:''}</span><input type="checkbox" data-bind="set.${k}" ${s[k]?'checked':''}></label>`;
+ let used=0;try{used=new Blob([localStorage.getItem(KEY)||'']).size}catch(e){}
+ modal(`<h3>설정</h3>${tg('autoNext','항목 완료 시 다음 항목으로 자동 이동','시료 n개를 모두 입력하면 남은 항목으로 넘어가요')}${tg('beep','소리 알림','기록 확인음 · NG 경고음 · 타이머 종료음')}${tg('vib','진동 알림','Android에서 동작')}${tg('awake','측정 중 화면 꺼짐 방지')}${tg('voiceAuto','음성 인식 즉시 기록','끄면 인식값을 표시만 하고 ‘기록’을 눌러야 저장')}
+ <label class="tog"><span>화면 테마</span><select data-bind="set.theme" style="width:auto;margin:0"><option value="auto" ${s.theme==='auto'?'selected':''}>시스템</option><option value="light" ${s.theme==='light'?'selected':''}>밝게</option><option value="dark" ${s.theme==='dark'?'selected':''}>어둡게</option></select></label>
+ <h3 style="margin-top:18px">데이터</h3><p class="sub sm">데이터는 이 기기의 브라우저에만 저장돼요. 브라우저 데이터 삭제 시 사라지니 주기적으로 백업하세요. (사용량 ${(used/1024).toFixed(1)} KB)</p>
+ <button class="btn" data-act="backup">⤓ 전체 백업 (JSON)</button><button class="btn" data-act="importBtn">⤒ 백업 불러오기</button><input type="file" accept=".json,application/json" id="impf" data-bind="importFile" hidden>
+ <button class="btn dng" data-act="wipe">🗑 전체 데이터 삭제</button>
+ <h3 style="margin-top:18px">사용 팁</h3><p class="sub sm">· 블루투스/USB 숫자 키패드 지원: 숫자 입력 → Enter 기록, Space 타이머 시작/정지, Esc 지우기<br>· 🎤 음성: “사 점 팔” 또는 “4.8” → 바로 기록, “취소” “다음” “시작” “정지” 명령<br>· 측정 칸을 한 번 눌러 선택, 다시 누르면 메모/삭제<br>· 부품 ‘복제’로 같은 조건의 새 Lot을 빠르게 만들 수 있어요</p>
+ <p class="sub sm center">신뢰성 측정 기록 v${VERSION}</p><button class="btn pri" data-act="close" style="justify-content:center">닫기</button>`)}
+function exportModal(){const p=part();const sh=!!navigator.share;
+ modal(`<h3>내보내기 · ${esc(p.name)}</h3><button class="btn" data-act="exRaw">⤓ 원시 데이터 CSV (시료별 전체)</button><button class="btn" data-act="exSum">⤓ 요약 CSV (평균·최소·최대·σ·Cpk·판정)</button>
+ <button class="btn" data-act="cpSum">⧉ 요약표 복사 (엑셀 붙여넣기용)</button><button class="btn" data-act="cpRaw">⧉ 원시 데이터 복사</button>
+ ${sh?'<button class="btn" data-act="shSum">↗ 요약 CSV 공유 (메신저·메일)</button>':''}<button class="btn" data-act="exJson">⤓ 이 부품 백업 (JSON)</button>
+ <button class="btn pri" data-act="close" style="justify-content:center">닫기</button>`)}
+function cellModal(i){const p=part(),it=item(),x=getArr(p,V.stage,it.id)[i];const j=judge(x.v,it);
+ modal(`<h3>시료 #${i+1} · ${fmt(x.v,4)} ${esc(it.unit)} ${j==='NG'?'<span class="badge ng">NG</span>':j==='OK'?'<span class="badge ok">OK</span>':''}</h3>
+ <p class="sub sm">${esc(it.name)} · 측정 ${isoLocal(x.t)}</p><textarea id="cnote" rows="3" placeholder="메모 (예: 초기 기동 불안정, 재측정)">${esc(x.n||'')}</textarea>
+ <button class="btn pri" data-act="saveNote" data-i="${i}" style="justify-content:center">메모 저장</button><button class="btn dng" data-act="delCell" data-i="${i}">값 삭제</button><button class="btn" data-act="close">닫기</button>`)}
+
+/* ---------- actions ---------- */
+const ACT={
+ back,close:closeModal,settings:settingsModal,
+ newPart:()=>openEditor(null),
+ demo(){const st=[{id:uid(),name:'초기'},{id:uid(),name:'환경시험 후'},{id:uid(),name:'내구시험 후'}];
+  S.parts.push({id:uid(),name:'예시) 정수 펌프 모터',code:'PM-24V-01',maker:'',lot:'',note:'예시 부품입니다. 자유롭게 수정·삭제하세요.',samples:10,stages:st,
+  items:[newItem({name:'최소 동작전압',unit:'V',usl:'18'}),newItem({name:'소비전류',unit:'mA',lsl:'300',usl:'450'}),newItem({name:'회전수',unit:'rpm',lsl:'2800',usl:'3200'}),newItem({name:'유량',unit:'L/min',lsl:'1.2',timed:true,dur:60}),newItem({name:'소음',unit:'dB(A)',usl:'45'})],
+  data:{},created:Date.now(),updated:Date.now()});save();render()},
+ openPart:(el,id)=>{const p=S.parts.find(x=>x.id===id);go('part',{partId:id,stage:p.stages[0].id})},
+ stage:(el,id)=>{V.stage=id;render()},
+ editPart:()=>openEditor(part()),
+ measureItem:(el,id)=>go('measure',{itemId:id}),
+ startMeasure(){const p=part();const it=p.items.find(x=>getArr(p,V.stage,x.id).some(y=>!y))||p.items[0];go('measure',{itemId:it.id})},
+ report:()=>go('report'),exportMenu:exportModal,
+ dupPart(){const p=part();const c=JSON.parse(JSON.stringify(p));c.id=uid();c.name=p.name+' (복제)';c.lot='';c.data={};c.created=c.updated=Date.now();S.parts.push(c);save();
+  toast('복제했어요 (측정값 제외) — 이름·Lot을 수정하세요');V.partId=c.id;V.stage=c.stages[0].id;render()},
+ delPart(){const p=part();if(!confirm(`‘${p.name}’과 모든 측정값을 삭제할까요?`))return;S.parts=S.parts.filter(x=>x.id!==p.id);save();back()},
+ pickItem:(el,id)=>{setItem(id);render()},
+ key:el=>key(el.dataset.k),commit,undo,skip,
+ cell(el){const i=+el.dataset.i,p=part(),it=item(),a=getArr(p,V.stage,it.id);if(i===V.sample&&a[i]){cellModal(i);return}V.sample=i;V.input='';render()},
+ saveNote(el){const i=+el.dataset.i,p=part(),x=getArr(p,V.stage,V.itemId)[i];if(x){x.n=$('#cnote').value.trim();p.updated=Date.now();save()}closeModal();render()},
+ delCell(el){const i=+el.dataset.i,p=part(),a=getArr(p,V.stage,V.itemId);UNDO.push({pid:p.id,sid:V.stage,iid:V.itemId,i,prev:a[i]});a[i]=null;V.sample=i;save();closeModal();toast('삭제했어요 (↶ 취소로 복구 가능)');render()},
+ voice:toggleVoice,
+ tStart,tReset,
+ tMode(el){T.mode=el.dataset.m;tResetRaw();render()},
+ tDur(){const v=prompt('카운트다운 시간 (초)',T.dur);const n=parseInt(v);if(n>0){T.dur=n;tResetRaw();render()}},
+ tUse(){V.input=String(+tEl().toFixed(1));updateDisp()},
+ saveEdit,
+ itAdd(){D.items.push(newItem());render()},
+ itPreset:el=>{D.items.push(newItem({...PRESETS[+el.dataset.id]}));render()},
+ itDel:el=>{D.items.splice(+el.dataset.id,1);render()},
+ itMv(el){const i=+el.dataset.id,j=i+(+el.dataset.d);if(j<0||j>=D.items.length)return;[D.items[i],D.items[j]]=[D.items[j],D.items[i]];render()},
+ sgAdd(el){let n=el.dataset.n;if(!n){n=prompt('시험 단계 이름');if(!n||!n.trim())return}D.stages.push({id:uid(),name:n.trim()});render()},
+ sgDel:el=>{D.stages.splice(+el.dataset.id,1);render()},
+ sgMv(el){const i=+el.dataset.id;if(i<1)return;[D.stages[i-1],D.stages[i]]=[D.stages[i],D.stages[i-1]];render()},
+ exRaw(){const p=part();download(safeName(`${p.name}_원시데이터_${ymd()}.csv`),toCSV(rawTable(p)))},
+ exSum(){const p=part();download(safeName(`${p.name}_요약_${ymd()}.csv`),toCSV(sumTable(p)))},
+ cpSum(){copyText(sumTable(part()).map(r=>r.join('\t')).join('\n'))},
+ cpRaw(){copyText(rawTable(part()).map(r=>r.join('\t')).join('\n'))},
+ shSum(){const p=part();shareFile(safeName(`${p.name}_요약_${ymd()}.csv`),toCSV(sumTable(p)),'text/csv')},
+ exJson(){const p=part();download(safeName(`${p.name}_백업_${ymd()}.json`),JSON.stringify({app:'rel-log',version:VERSION,parts:[p]},null,1),'application/json')},
+ backup(){download(`신뢰성측정_전체백업_${ymd()}.json`,JSON.stringify({app:'rel-log',version:VERSION,parts:S.parts},null,1),'application/json')},
+ importBtn:()=>$('#impf').click(),
+ wipe(){if(!confirm('모든 부품과 측정값을 삭제할까요? 되돌릴 수 없어요.'))return;if(!confirm('정말 삭제할까요? (백업을 먼저 권장)'))return;S.parts=[];save();closeModal();V.name='home';STK.length=0;render()}
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const f=ACT[el.dataset.act];if(f)f(el,el.dataset.id,e)});
+
+function onBind(e){const el=e.target,b=el.dataset.bind;if(!b)return;const val=el.type==='checkbox'?el.checked:el.value;
+ if(b==='search'){V.q=val;$('#list').innerHTML=homeList();return}
+ if(b==='stageSel'){if(e.type==='change'){V.stage=val;setItem(V.itemId);render()}return}
+ if(b==='importFile'){if(e.type==='change'&&el.files[0])importJSON(el.files[0]);return}
+ if(b.startsWith('set.')){if(e.type!=='change'&&el.type==='checkbox')return;S.settings[b.slice(4)]=val;save();if(b==='set.theme')applyTheme();if(b==='set.awake')wake(V.name==='measure');return}
+ if(!D)return;
+ if(b.startsWith('d.')){D[b.slice(2)]=val;return}
+ if(b.startsWith('sg.')){D.stages[+b.slice(3)].name=val;return}
+ if(b.startsWith('it.')){const[,i,f]=b.split('.');D.items[+i][f]=val;if(f==='timed'&&e.type==='change')render()}}
+document.addEventListener('input',onBind);document.addEventListener('change',onBind);
+function importJSON(file){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);const ps=Array.isArray(d)?d:d.parts;if(!Array.isArray(ps))throw 0;let a=0,u=0;
+ ps.forEach(p=>{if(!p||!p.id||!Array.isArray(p.items)||!Array.isArray(p.stages))return;const i=S.parts.findIndex(x=>x.id===p.id);if(i>=0){if(!confirm(`‘${p.name}’이 이미 있어요. 백업 내용으로 덮어쓸까요?`))return;S.parts[i]=p;u++}else{S.parts.push(p);a++}});
+ save();closeModal();render();toast(`불러오기 완료 · 추가 ${a} · 갱신 ${u}`)}catch(e){toast('올바른 백업 파일이 아니에요')}};r.readAsText(file)}
+
+document.addEventListener('keydown',e=>{if(V.name!=='measure'||!$('#modal').classList.contains('hidden'))return;if(e.target.matches('input,textarea,select'))return;
+ const k=e.key;if(/^[0-9]$/.test(k))key(k);else if(k==='.'||k===','||k==='Decimal')key('.');else if(k==='-'||k==='Subtract')key('±');else if(k==='Backspace'){e.preventDefault();key('⌫')}
+ else if(k==='Enter'){e.preventDefault();commit()}else if(k==='Escape')key('C');else if(k===' '){e.preventDefault();tStart()}else if(k==='ArrowRight')skip();else if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();undo()}});
+window.addEventListener('beforeunload',()=>save());
+
+applyTheme();history.replaceState({n:0},'');render();
+if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
