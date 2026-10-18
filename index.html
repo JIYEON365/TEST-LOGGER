@@ -68,6 +68,7 @@ button{cursor:pointer;touch-action:manipulation;border:0;background:none}
 .cell{border-radius:9px;background:var(--card);border:1.5px solid var(--ln);padding:3px 2px 5px;text-align:center;min-width:0}
 .cell small{display:block;font-size:10px;color:var(--sub);line-height:1.2}.cell span{display:block;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cell.ok{background:var(--okb);color:var(--ok);border-color:transparent}.cell.ng{background:var(--ngb);color:var(--ng);border-color:transparent}
+.cell.adj{border-style:dashed;color:var(--pri)}.cell.adj span{font-weight:400}.sn{width:78px!important;flex:none}
 .cell.em span{color:var(--sub);font-weight:400}.cell.cur{border-color:var(--pri);box-shadow:0 0 0 2px var(--pri)}
 .tmr{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:8px 10px;margin-bottom:8px}
 .tmr.done{border-color:var(--ok);background:var(--okb)}
@@ -131,7 +132,7 @@ button{cursor:pointer;touch-action:manipulation;border:0;background:none}
 <div id="toast"></div>
 <script>
 'use strict';
-const VERSION='1.0.0';
+const VERSION='1.1.0';
 const KEY='coway-rel-log.v1';
 const $=s=>document.querySelector(s);
 const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
@@ -164,8 +165,9 @@ const V={name:'home',partId:null,stage:null,itemId:null,sample:0,input:'',q:'',h
 const STK=[];let D=null;const UNDO=[];
 const part=()=>S.parts.find(p=>p.id===V.partId);
 const item=()=>{const p=part();return p&&p.items.find(i=>i.id===V.itemId)};
-function getArr(p,sid,iid){p.data=p.data||{};const s=p.data[sid]=p.data[sid]||{};let a=s[iid];
- if(!Array.isArray(a))a=s[iid]=[];while(a.length<p.samples)a.push(null);if(a.length>p.samples)a.length=p.samples;return a}
+const nOf=(p,sid)=>{const s=p.stages.find(x=>x.id===sid);return (s&&s.n)||p.samples};
+function getArr(p,sid,iid){const N=nOf(p,sid);p.data=p.data||{};const s=p.data[sid]=p.data[sid]||{};let a=s[iid];
+ if(!Array.isArray(a))a=s[iid]=[];while(a.length<N)a.push(null);if(a.length>N)a.length=N;return a}
 
 /* ---------- judging & stats ---------- */
 function judge(v,it){if(v==null)return null;const l=num(it.lsl),u=num(it.usl);if(l==null&&u==null)return'NA';
@@ -234,20 +236,20 @@ function homeList(){
  return ps.map(p=>{const pr=progress(p);return `<button class="card pcard" data-act="openPart" data-id="${p.id}">
  <div class="row"><b>${esc(p.name)}</b>${pr.ng?`<span class="badge ng">NG ${pr.ng}</span>`:pr.pct===100?'<span class="badge ok">완료</span>':''}</div>
  <div class="sub sm">${esc([p.code,p.maker,p.lot].filter(Boolean).join(' · '))||'&nbsp;'}</div>
- <div class="meta"><span>n=${p.samples}</span><span>항목 ${p.items.length}개</span><span>${p.stages.map(s=>esc(s.name)).join(' → ')}</span></div>
+ <div class="meta"><span>n=${[...new Set(p.stages.map(s=>nOf(p,s.id)))].join('/')}</span><span>항목 ${p.items.length}개</span><span>${p.stages.map(s=>esc(s.name)).join(' → ')}</span></div>
  <div class="prog"><i style="width:${pr.pct}%"></i></div><div class="sub sm">${pr.pct}% 완료 · 최근 ${fmtDate(p.updated,true)}</div></button>`}).join('')}
 
 function renderPart(){
  const p=part();if(!p){V.name='home';return renderHome()}
  if(!p.stages.some(s=>s.id===V.stage))V.stage=p.stages[0].id;
- const tabs=p.stages.map(s=>{const pr=progress(p,s.id);return `<button class="tab ${s.id===V.stage?'on':''}" data-act="stage" data-id="${s.id}">${esc(s.name)}<small>${pr.pct}%${pr.ng?' · NG '+pr.ng:''}</small></button>`}).join('');
+ const tabs=p.stages.map(s=>{const pr=progress(p,s.id);return `<button class="tab ${s.id===V.stage?'on':''}" data-act="stage" data-id="${s.id}">${esc(s.name)}<small>n=${nOf(p,s.id)} · ${pr.pct}%${pr.ng?' · NG '+pr.ng:''}</small></button>`}).join('');
  const pr=progress(p,V.stage);
  const verdict=pr.ng?`<div class="verdict ng">✗ 기준 이탈 ${pr.ng}건 — 불합격 항목 있음</div>`:pr.pct===100?`<div class="verdict ok">✓ 이 단계 전 항목 기준 내 (합격)</div>`:`<div class="verdict run">측정 진행 중 · ${pr.f}/${pr.t} (${pr.pct}%)</div>`;
- const rows=p.items.map(it=>{const st=stats(getArr(p,V.stage,it.id),it);const done=st.n===p.samples;
+ const rows=p.items.map(it=>{const st=stats(getArr(p,V.stage,it.id),it);const N=nOf(p,V.stage),done=st.n===N;
   const b=!st.n?'<span class="badge">미측정</span>':st.ng?`<span class="badge ng">NG ${st.ng}</span>`:done?'<span class="badge ok">OK</span>':'<span class="badge run">진행중</span>';
   return `<button class="irow" data-act="measureItem" data-id="${it.id}"><div class="l"><b>${esc(it.name)}</b>${it.timed?` <span class="tm">⏱${it.dur}s</span>`:''}<small>${esc(specText(it))}</small></div>
-  <div class="m"><span>${st.n}/${p.samples}</span><small>${st.n?`x̄ ${fmt(st.mean)} · ${fmt(st.min)}~${fmt(st.max)}`:''}</small></div><div>${b}</div></button>`}).join('');
- return `<header class="top"><button class="ib" data-act="back">‹</button><div class="ttl"><b>${esc(p.name)}</b><small>${esc([p.code,p.maker,p.lot].filter(Boolean).join(' · '))||'n='+p.samples}</small></div><button class="ib" data-act="editPart" aria-label="설정">✎</button></header>
+  <div class="m"><span>${st.n}/${N}</span><small>${st.n?`x̄ ${fmt(st.mean)} · ${fmt(st.min)}~${fmt(st.max)}`:''}</small></div><div>${b}</div></button>`}).join('');
+ return `<header class="top"><button class="ib" data-act="back">‹</button><div class="ttl"><b>${esc(p.name)}</b><small>${esc([p.code,p.maker,p.lot].filter(Boolean).join(' · '))||''}</small></div><button class="ib" data-act="editPart" aria-label="설정">✎</button></header>
  <main class="wrap"><div class="tabs">${tabs}</div>${verdict}${rows}
  ${p.note?`<p class="sub sm">📝 ${esc(p.note)}</p>`:''}
  <div class="acts"><button class="btn pri full" data-act="startMeasure">▶ 측정 시작 (${esc(p.stages.find(s=>s.id===V.stage).name)})</button>
@@ -269,10 +271,10 @@ function timerHTML(it){const dn=T.mode==='down';
 
 function renderMeasure(){
  const p=part(),it=item();if(!p||!it){V.name='home';return renderHome()}
- const arr=getArr(p,V.stage,it.id),st=stats(arr,it);if(V.sample==null||V.sample>=p.samples)V.sample=0;const cur=arr[V.sample];
+ const arr=getArr(p,V.stage,it.id),st=stats(arr,it);const N=nOf(p,V.stage);if(V.sample==null||V.sample>=N)V.sample=0;const cur=arr[V.sample];
  const chips=p.items.map(x=>{const a=getArr(p,V.stage,x.id),f=a.filter(Boolean).length,ng=a.filter(y=>y&&judge(y.v,x)==='NG').length;
-  return `<button class="ichip ${x.id===it.id?'on':''} ${f===p.samples?'done':''}" data-act="pickItem" data-id="${x.id}">${esc(x.name)}<small>${f}/${p.samples}${ng?` <em>NG${ng}</em>`:''}</small></button>`}).join('');
- const cells=arr.map((x,i)=>{const j=x?judge(x.v,it):'';return `<button class="cell ${i===V.sample?'cur':''} ${x?(j==='NG'?'ng':j==='OK'?'ok':''):'em'}" data-act="cell" data-i="${i}"><small>${i+1}${x&&x.n?' ✎':''}</small><span>${x?fmt(x.v,4):'·'}</span></button>`}).join('');
+  return `<button class="ichip ${x.id===it.id?'on':''} ${f===N?'done':''}" data-act="pickItem" data-id="${x.id}">${esc(x.name)}<small>${f}/${N}${ng?` <em>NG${ng}</em>`:''}</small></button>`}).join('');
+ const cells=arr.map((x,i)=>{const j=x?judge(x.v,it):'';return `<button class="cell ${i===V.sample?'cur':''} ${x?(j==='NG'?'ng':j==='OK'?'ok':''):'em'}" data-act="cell" data-i="${i}"><small>${i+1}${x&&x.n?' ✎':''}</small><span>${x?fmt(x.v,4):'·'}</span></button>`}).join('')+`<button class="cell adj" data-act="nAdd"><small>시료</small><span>＋</span></button>${N>1?`<button class="cell adj" data-act="nDel"><small>시료</small><span>－</span></button>`:''}`;
  return `<div class="mwrap"><header class="top slim"><button class="ib" data-act="back">‹</button>
  <div class="mt"><b>${esc(p.name)}</b><select class="stsel" data-bind="stageSel">${p.stages.map(s=>`<option value="${s.id}" ${s.id===V.stage?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
  <span class="clock" id="clock">${clockStr()}</span><button class="ib ${voiceOn?'live':''}" data-act="voice" aria-label="음성 입력">🎤</button></header>
@@ -309,11 +311,11 @@ function commit(){const v=parseFloat(V.input);if(!isFinite(v)){toast('값을 입
  let nx=arr.findIndex((x,k)=>k>i&&!x);if(nx<0)nx=arr.findIndex(x=>!x);
  if(nx>=0)V.sample=nx;
  else{beep(1500,.12);if(S.settings.autoNext){const idx=p.items.findIndex(x=>x.id===it.id);const rest=[...p.items.slice(idx+1),...p.items.slice(0,idx)];
-  const nit=rest.find(x=>getArr(p,V.stage,x.id).some(y=>!y));if(nit){setItem(nit.id);toast(`✓ ${it.name} 완료 → 다음: ${nit.name}`)}else toast(`✓ 이 단계 전 항목 측정 완료!`)}else toast(`✓ ${it.name} ${p.samples}개 측정 완료`)}
+  const nit=rest.find(x=>getArr(p,V.stage,x.id).some(y=>!y));if(nit){setItem(nit.id);toast(`✓ ${it.name} 완료 → 다음: ${nit.name}`)}else toast(`✓ 이 단계 전 항목 측정 완료!`)}else toast(`✓ ${it.name} ${nOf(p,V.stage)}개 측정 완료`)}
  render()}
 function undo(){const u=UNDO.pop();if(!u){toast('되돌릴 기록이 없어요');return}const p=S.parts.find(x=>x.id===u.pid);if(!p)return;
  getArr(p,u.sid,u.iid)[u.i]=u.prev;p.updated=Date.now();save();V.partId=p.id;V.stage=u.sid;V.itemId=u.iid;V.sample=u.i;V.input='';toast(`↶ #${u.i+1} 입력 취소`);render()}
-function skip(){const p=part();V.sample=(V.sample+1)%p.samples;V.input='';render()}
+function skip(){const p=part();V.sample=(V.sample+1)%nOf(p,V.stage);V.input='';render()}
 
 /* ---------- voice ---------- */
 let REC=null,voiceOn=false;
@@ -355,14 +357,14 @@ function renderEdit(){if(!D){V.name='home';return renderHome()}
  <div class="g-it2"><label class="mini">하한 (LSL)<input inputmode="decimal" data-bind="it.${i}.lsl" value="${esc(it.lsl)}" placeholder="없음"></label><label class="mini">상한 (USL)<input inputmode="decimal" data-bind="it.${i}.usl" value="${esc(it.usl)}" placeholder="없음"></label></div>
  <div class="g-it3"><label class="ck"><input type="checkbox" data-bind="it.${i}.timed" ${it.timed?'checked':''}>⏱ 타이머 측정</label>${it.timed?`<label class="mini inl"><input type="number" inputmode="numeric" min="1" data-bind="it.${i}.dur" value="${it.dur||60}">초</label>`:''}
  <span class="sp"></span><button class="ib sm" data-act="itMv" data-id="${i}" data-d="-1">▲</button><button class="ib sm" data-act="itMv" data-id="${i}" data-d="1">▼</button><button class="ib sm dng" data-act="itDel" data-id="${i}">✕</button></div></div>`).join('');
- const stages=D.stages.map((s,i)=>`<div class="srow"><input data-bind="sg.${i}" value="${esc(s.name)}" placeholder="단계명"><button class="ib sm" data-act="sgMv" data-id="${i}">▲</button><button class="ib sm dng" data-act="sgDel" data-id="${i}">✕</button></div>`).join('');
+ const stages=D.stages.map((s,i)=>`<div class="srow"><input data-bind="sg.${i}" value="${esc(s.name)}" placeholder="단계명"><input class="sn" type="number" inputmode="numeric" min="1" max="200" data-bind="sgn.${i}" value="${esc(s.n||'')}" placeholder="n=${esc(D.samples)}" title="이 단계 시료 수"><button class="ib sm" data-act="sgMv" data-id="${i}">▲</button><button class="ib sm dng" data-act="sgDel" data-id="${i}">✕</button></div>`).join('');
  return `<header class="top"><button class="ib" data-act="back">✕</button><b class="ttl1">${D._new?'새 부품 등록':'부품 설정'}</b><button class="btn pri sm" data-act="saveEdit">저장</button></header>
  <main class="wrap form"><section class="card"><h3>기본 정보</h3>
  <label>부품명 *<input data-bind="d.name" value="${esc(D.name)}" placeholder="예: 정수 펌프 모터"></label>
  <div class="g2"><label>부품코드 / 모델<input data-bind="d.code" value="${esc(D.code)}"></label><label>공급사<input data-bind="d.maker" value="${esc(D.maker)}"></label></div>
- <div class="g2"><label>시료 수 (n)<input type="number" inputmode="numeric" min="1" max="200" data-bind="d.samples" value="${esc(D.samples)}"></label><label>Lot / 시험번호<input data-bind="d.lot" value="${esc(D.lot)}"></label></div>
+ <div class="g2"><label>기본 시료 수 (n)<input type="number" inputmode="numeric" min="1" max="200" data-bind="d.samples" value="${esc(D.samples)}"><span class="chips" style="margin-top:6px">${[3,5,10,20,30].map(k=>`<button class="chip" data-act="nPreset" data-n="${k}">${k}</button>`).join('')}</span></label><label>Lot / 시험번호<input data-bind="d.lot" value="${esc(D.lot)}"></label></div>
  <label>메모<textarea rows="2" data-bind="d.note">${esc(D.note)}</textarea></label></section>
- <section class="card"><h3>시험 단계</h3>${stages}<div class="chips">${STAGE_PRESETS.filter(n=>!D.stages.some(s=>s.name===n)).map(n=>`<button class="chip" data-act="sgAdd" data-n="${n}">+ ${n}</button>`).join('')}<button class="chip" data-act="sgAdd">+ 직접 입력</button></div></section>
+ <section class="card"><h3>시험 단계 <small>· 오른쪽 칸: 단계별 시료 수 (비우면 기본값)</small></h3>${stages}<div class="chips">${STAGE_PRESETS.filter(n=>!D.stages.some(s=>s.name===n)).map(n=>`<button class="chip" data-act="sgAdd" data-n="${n}">+ ${n}</button>`).join('')}<button class="chip" data-act="sgAdd">+ 직접 입력</button></div></section>
  <section class="card"><h3>측정 항목 <small>· 기준값을 비우면 판정 없이 기록만</small></h3>${items||'<p class="sub sm">아래에서 항목을 추가하세요</p>'}
  <p class="sub sm" style="margin:10px 0 6px">빠른 추가</p><div class="chips">${PRESETS.map((x,i)=>`<button class="chip" data-act="itPreset" data-id="${i}">+ ${x.name}</button>`).join('')}<button class="chip" data-act="itAdd">+ 빈 항목</button></div></section>
  ${D._new?'':'<p class="sub sm center">단계/항목을 삭제하거나 시료 수를 줄이면 해당 측정값도 삭제돼요.</p>'}</main>`}
@@ -375,9 +377,9 @@ function saveEdit(){const name=(D.name||'').trim();if(!name)return toast('부품
  const old=S.parts.find(x=>x.id===D.id);const src=old?old.data||{}:{};const keepS=new Set(stages.map(s=>s.id)),keepI=new Set(items.map(i=>i.id));
  let lost=0;const data={};
  for(const sid of Object.keys(src))for(const iid of Object.keys(src[sid])){const a=src[sid][iid]||[];if(!keepS.has(sid)||!keepI.has(iid)){lost+=a.filter(Boolean).length;continue}
-  lost+=a.slice(n).filter(Boolean).length;(data[sid]=data[sid]||{})[iid]=a.slice(0,n)}
+  const sn=Math.min(200,parseInt(stages.find(s=>s.id===sid).n)||n);lost+=a.slice(sn).filter(Boolean).length;(data[sid]=data[sid]||{})[iid]=a.slice(0,sn)}
  if(lost&&!confirm(`측정값 ${lost}개가 삭제됩니다. 계속할까요?`))return;
- const obj={id:D.id,name,code:D.code.trim(),maker:D.maker.trim(),lot:D.lot.trim(),note:D.note.trim(),samples:n,stages:stages.map(s=>({id:s.id,name:s.name.trim()})),
+ const obj={id:D.id,name,code:D.code.trim(),maker:D.maker.trim(),lot:D.lot.trim(),note:D.note.trim(),samples:n,stages:stages.map(s=>{const k=parseInt(s.n);return k>0&&k!==n?{id:s.id,name:s.name.trim(),n:Math.min(200,k)}:{id:s.id,name:s.name.trim()}}),
   items:items.map(({id,name,unit,lsl,usl,timed,dur})=>({id,name,unit,lsl,usl,timed,dur})),data,created:old?.created||Date.now(),updated:Date.now()};
  if(old)Object.assign(old,obj);else S.parts.push(obj);save();toast('저장했어요');
  const wasNew=D._new;D=null;if(wasNew){V.name='part';V.partId=obj.id;V.stage=obj.stages[0].id;render()}else back()}
@@ -394,9 +396,9 @@ function chart(p,it){const W=320,H=150,L=40,R=8,Tp=10,B=22;
   g.forEach((v,k)=>{if(v==null)return;const jx=cx+(m>1?(k/(m-1)-.5)*gw*.55:0);s+=`<circle cx="${jx.toFixed(1)}" cy="${y(v)}" r="3" class="${judge(v,it)==='NG'?'dng':'dok'}"/>`});
   if(vs.length){const mn=vs.reduce((a,b)=>a+b,0)/vs.length;s+=`<line x1="${cx-gw*.35}" x2="${cx+gw*.35}" y1="${y(mn)}" y2="${y(mn)}" class="mean"/>`}
   s+=`<text x="${cx}" y="${H-6}" class="ax" text-anchor="middle">${esc(trunc(p.stages[gi].name,9))}</text>`});return s+'</svg>'}
-function summaryRows(p){const rows=[];p.items.forEach(it=>{let base=null;p.stages.forEach((s,si)=>{const st=stats(getArr(p,s.id,it.id),it);
+function summaryRows(p){const rows=[];p.items.forEach(it=>{let base=null;p.stages.forEach((s,si)=>{const r_s=s,st=stats(getArr(p,s.id,it.id),it);
  if(si===0)base=st.n?st.mean:null;const ch=(si>0&&base&&st.n)?(st.mean-base)/Math.abs(base)*100:null;
- const verdict=!st.n?'미측정':st.ng?'불합격':st.n<p.samples?'진행중':(num(it.lsl)==null&&num(it.usl)==null?'기준없음':'합격');
+ const verdict=!st.n?'미측정':st.ng?'불합격':st.n<nOf(p,r_s.id)?'진행중':(num(it.lsl)==null&&num(it.usl)==null?'기준없음':'합격');
  rows.push({it,s,st,ch,verdict})})});return rows}
 function renderReport(){const p=part();if(!p){V.name='home';return renderHome()}
  const rows=summaryRows(p);
@@ -404,7 +406,7 @@ function renderReport(){const p=part();if(!p){V.name='home';return renderHome()}
   return `<section class="card"><div class="row"><b>${esc(it.name)}</b><span class="sub sm">${esc(specText(it))}</span></div>${chart(p,it)}
   <div class="tblw"><table class="tbl"><tr><th>단계</th><th>n</th><th>평균</th><th>최소</th><th>최대</th><th>σ</th><th>Cpk</th><th>NG</th><th>초기대비</th></tr>
   ${rs.map(r=>`<tr><td>${esc(r.s.name)}</td><td>${r.st.n}</td><td><b>${fmt(r.st.mean)}</b></td><td>${fmt(r.st.min)}</td><td>${fmt(r.st.max)}</td><td>${r.st.n>1?fmt(r.st.sd):'–'}</td><td>${r.st.cpk!=null?fmt(r.st.cpk,2):'–'}</td><td class="${r.st.ng?'ng-c':''}">${r.st.n?r.st.ng:'–'}</td><td class="${r.ch!=null&&Math.abs(r.ch)>=10?'up':''}">${r.ch!=null?(r.ch>0?'+':'')+r.ch.toFixed(1)+'%':'–'}</td></tr>`).join('')}</table></div></section>`}).join('');
- return `<header class="top"><button class="ib" data-act="back">‹</button><div class="ttl"><b>결과 · 단계 비교</b><small>${esc(p.name)} · n=${p.samples}</small></div><button class="ib" data-act="exportMenu" aria-label="내보내기">⤓</button></header>
+ return `<header class="top"><button class="ib" data-act="back">‹</button><div class="ttl"><b>결과 · 단계 비교</b><small>${esc(p.name)} · n=${p.stages.map(s=>nOf(p,s.id)).join('/')}</small></div><button class="ib" data-act="exportMenu" aria-label="내보내기">⤓</button></header>
  <main class="wrap"><p class="sub sm">● 측정값 · ━ 평균 · 빨간 점선 기준(LSL/USL) · 초기대비 ±10% 이상은 주황색 표시</p>${cards}</main>`}
 
 /* ---------- export ---------- */
@@ -471,6 +473,10 @@ const ACT={
  tDur(){const v=prompt('카운트다운 시간 (초)',T.dur);const n=parseInt(v);if(n>0){T.dur=n;tResetRaw();render()}},
  tUse(){V.input=String(+tEl().toFixed(1));updateDisp()},
  saveEdit,
+ nPreset(el){D.samples=+el.dataset.n;render()},
+ nAdd(){const p=part(),s=p.stages.find(x=>x.id===V.stage),N=nOf(p,V.stage);if(N>=200)return toast('최대 200개');s.n=N+1;getArr(p,V.stage,V.itemId);V.sample=N;V.input='';p.updated=Date.now();save();toast(`이 단계 시료 수 → ${N+1}개`);render()},
+ nDel(){const p=part(),s=p.stages.find(x=>x.id===V.stage),N=nOf(p,V.stage);if(N<=1)return;const filled=p.items.filter(it=>{const a=(p.data[V.stage]||{})[it.id];return a&&a[N-1]}).length;
+  if(filled&&!confirm(`#${N} 시료에 입력된 값 ${filled}개(전 항목)가 삭제돼요. 계속할까요?`))return;s.n=N-1;p.items.forEach(it=>getArr(p,V.stage,it.id));if(V.sample>=N-1)V.sample=N-2;V.input='';p.updated=Date.now();save();toast(`이 단계 시료 수 → ${N-1}개`);render()},
  itAdd(){D.items.push(newItem());render()},
  itPreset:el=>{D.items.push(newItem({...PRESETS[+el.dataset.id]}));render()},
  itDel:el=>{D.items.splice(+el.dataset.id,1);render()},
@@ -498,6 +504,7 @@ function onBind(e){const el=e.target,b=el.dataset.bind;if(!b)return;const val=el
  if(!D)return;
  if(b.startsWith('d.')){D[b.slice(2)]=val;return}
  if(b.startsWith('sg.')){D.stages[+b.slice(3)].name=val;return}
+ if(b.startsWith('sgn.')){D.stages[+b.slice(4)].n=val;return}
  if(b.startsWith('it.')){const[,i,f]=b.split('.');D.items[+i][f]=val;if(f==='timed'&&e.type==='change')render()}}
 document.addEventListener('input',onBind);document.addEventListener('change',onBind);
 function importJSON(file){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);const ps=Array.isArray(d)?d:d.parts;if(!Array.isArray(ps))throw 0;let a=0,u=0;
