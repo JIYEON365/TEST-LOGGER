@@ -73,6 +73,7 @@ button{cursor:pointer;touch-action:manipulation;border:0;background:none}
 .schip{flex:none;padding:5px 11px;border-radius:99px;background:var(--keyfn);font-size:12.5px;font-weight:700;color:var(--sub)}.schip small{font-weight:400}.schip em{color:var(--ng);font-style:normal;font-weight:700}
 .schip.done{color:var(--ok)}.schip.on{background:var(--pri2);color:var(--pri);box-shadow:inset 0 0 0 1.5px var(--pri)}
 .mt small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qin{display:flex;gap:6px;margin-bottom:8px}.qin input{flex:1;min-width:0;padding:9px 12px;border:1px solid var(--ln);border-radius:10px;background:var(--card);font-size:15px;outline:none}.qin input:focus{border-color:var(--pri)}
 .cell.em span{color:var(--sub);font-weight:400}.cell.cur{border-color:var(--pri);box-shadow:0 0 0 2px var(--pri)}
 .tmr{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:8px 10px;margin-bottom:8px}
 .tmr.done{border-color:var(--ok);background:var(--okb)}
@@ -136,7 +137,7 @@ button{cursor:pointer;touch-action:manipulation;border:0;background:none}
 <div id="toast"></div>
 <script>
 'use strict';
-const VERSION='1.2.0';
+const VERSION='1.3.0';
 const KEY='coway-rel-log.v1';
 const $=s=>document.querySelector(s);
 const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
@@ -225,7 +226,7 @@ function render(){
  const app=$('#app');const sc=$('#ichips')?.scrollLeft,sc2=$('#schips')?.scrollLeft;
  const R={home:renderHome,part:renderPart,edit:renderEdit,measure:renderMeasure,report:renderReport}[V.name]||renderHome;
  app.innerHTML=R();
- if(V.name==='measure'){const ic=$('#ichips');if(ic&&sc!=null)ic.scrollLeft=sc;const sc_=$('#schips');if(sc_&&sc2!=null)sc_.scrollLeft=sc2;$('.ichip.on')?.scrollIntoView({inline:'nearest',block:'nearest'});$('.schip.on')?.scrollIntoView({inline:'nearest',block:'nearest'});
+ if(V.name==='measure'){const ic=$('#ichips');if(ic&&sc!=null)ic.scrollLeft=sc;const sc_=$('#schips');if(sc_&&sc2!=null)sc_.scrollLeft=sc2;$('.ichip.on')?.scrollIntoView({inline:'nearest',block:'nearest'});$('.schip.on')?.scrollIntoView({inline:'nearest',block:'nearest'});if(V.qFocus){V.qFocus=false;const q=$('#qin');if(q)q.focus({preventScroll:true})}
   const cc=$('.cell.cur'),ms=$('#mscroll');if(cc&&ms){const r=cc.getBoundingClientRect(),m=ms.getBoundingClientRect();if(r.bottom>m.bottom||r.top<m.top)cc.scrollIntoView({block:'nearest'})}updateDisp()}
 }
 
@@ -286,7 +287,7 @@ function renderMeasure(){
  <div class="ichips" id="ichips">${chips}</div>
  <div class="mscroll" id="mscroll"><div class="spec"><div><b>${esc(it.name)}</b> <span class="sub sm">${esc(specText(it))}</span></div>
  <div class="mini-st">${st.n?`x̄ <b>${fmt(st.mean)}</b> · min <b>${fmt(st.min)}</b> · max <b>${fmt(st.max)}</b>${st.n>1?` · σ ${fmt(st.sd)}`:''}${st.ng?` · <em class="ngt">NG ${st.ng}</em>`:''}`:'측정값 없음 — 아래 키패드로 입력'}</div></div>
- <div class="cells">${cells}</div>${timerHTML(it)}
+ <div class="cells">${cells}</div><form class="qin" data-act="noop" onsubmit="return qSubmit()"><input id="qin" type="text" enterkeyhint="send" autocomplete="off" placeholder="빠른 입력: 내열1 150  ·  고온고습2 4.8"><button class="btn pri sm" type="submit">입력</button></form>${timerHTML(it)}
  ${voiceOn?`<div class="heard">🎤 듣는 중 · ${V.heard?`인식: “${esc(V.heard)}”`:'예: “내열 1, 백오십” · “고온고습 2번 4.8” · “사 점 팔” · “취소” “다음” “시작”'}${V.last?`<br><b>✓ ${esc(V.last)}</b>`:''}</div>`:''}</div>
  <div class="dispbar"><div class="dlabel">${esc(p.stages.find(s=>s.id===V.stage).name)} · 시료 #${V.sample+1}${cur?` <span class="sub">· 기존 ${fmt(cur.v,4)} (${fmtDate(cur.t)}) → 입력 시 덮어씀</span>`:''}</div><div id="disp" class="disp"></div></div>
  <div class="pad">${KEYPAD}</div></div>`}
@@ -346,12 +347,14 @@ function toggleVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRec
  REC.onend=()=>{if(voiceOn&&V.name==='measure')setTimeout(()=>{try{REC.start()}catch(e){}},150)};
  voiceOn=true;V.heard='';try{REC.start()}catch(e){}unlockAudio();render();toast('🎤 숫자를 말하면 바로 기록돼요')}
 function stopVoice(){voiceOn=false;try{REC&&REC.stop()}catch(e){}}
+const STAGE_ALIAS={'내열':['내일','냉열','내혈','내결','네열','내열'],'내한':['냉한','내안','내환','네한'],'고온고습':['고온고속','고온 고습','고온교습'],'열충격':['열충돌','여충격','열 충격'],'초기':['초기값','처음'],'내구':['내구성']};
+const ENV_WORDS=['내열','내일','내한','고온고습','열충격','저온','고온','진동','낙하','내구'];
 const UNIT_ALIAS={rpm:['알피엠','알피앰'],ma:['밀리암페어','미리암페어','밀리'],v:['볼트'],w:['와트'],'l/min':['리터'],'db(a)':['데시벨','디비'],'℃':['도'],kpa:['킬로파스칼']};
 const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&');
 function takeKey(str,keys){keys=keys.filter(k=>k[0]).sort((a,b)=>b[0].length-a[0].length);
  for(const[k,id]of keys){const re=new RegExp([...k].map(reEsc).join('\\s*'),'i');if(re.test(str))return{str:str.replace(re,' '),id}}return null}
 function parseTarget(s){const p=part();if(!p)return null;let str=' '+s+' ',sid=null,iid=null,idx=null,val=null;
- const sk=[];p.stages.forEach(st=>{const nm=st.name.replace(/\s/g,'');const base=nm.replace(/(시험)?후$/,'').replace(/시험$/,'');sk.push([nm,st.id]);if(base&&base!==nm)sk.push([base,st.id])});
+ const sk=[];p.stages.forEach(st=>{const nm=st.name.replace(/\s/g,'');const base=nm.replace(/(시험)?후$/,'').replace(/시험$/,'');sk.push([nm,st.id]);if(base&&base!==nm)sk.push([base,st.id]);for(const k in STAGE_ALIAS)if(base.includes(k))STAGE_ALIAS[k].forEach(a=>sk.push([base.replace(k,a),st.id]))});
  let m=takeKey(str,sk);if(m){str=m.str;sid=m.id}
  const ik=p.items.map(it=>[it.name.replace(/\s/g,''),it.id]);const uc={};p.items.forEach(it=>{const u=(it.unit||'').toLowerCase();if(u)uc[u]=(uc[u]||0)+1});
  p.items.forEach(it=>{const u=(it.unit||'').toLowerCase();if(!u||uc[u]!==1)return;if(u.length>=2)ik.push([u,it.id]);(UNIT_ALIAS[u]||[]).forEach(a=>ik.push([a,it.id]))});
@@ -362,18 +365,22 @@ function parseTarget(s){const p=part();if(!p)return null;let str=' '+s+' ',sid=n
  else val=parseSpoken(raw.join(''));
  if(idx!=null){idx=Math.round(idx)-1;if(idx<0||idx>=200)idx=null}
  return{sid,iid,idx,val}}
-function applyTarget(r){const p=part();if(r.sid)V.stage=r.sid;setItem(r.iid||V.itemId);
+function applyTarget(r,force){const p=part();if(r.sid)V.stage=r.sid;setItem(r.iid||V.itemId);
  if(r.idx!=null){const st=p.stages.find(s=>s.id===V.stage),N=nOf(p,V.stage);if(r.idx>=N){st.n=r.idx+1;p.items.forEach(it=>getArr(p,V.stage,it.id));save();toast(`${st.name} 시료 수 → ${r.idx+1}개로 늘림`)}V.sample=r.idx}
- if(r.val!=null){V.input=String(r.val);if(S.settings.voiceAuto)return commit()}
+ if(r.val!=null){V.input=String(r.val);if(S.settings.voiceAuto||force)return commit()}
  else toast(`→ ${p.stages.find(s=>s.id===V.stage).name} · ${item().name} · #${V.sample+1}`);
  render()}
-function handleSpeech(t){if(V.name!=='measure')return;const s=t.trim(),c=s.replace(/\s/g,'');V.heard=s;
+function qSubmit(){const q=$('#qin');const t=(q.value||'').trim();if(!t)return false;V.qFocus=true;handleSpeech(t,true);return false}
+function handleSpeech(t,force){if(V.name!=='measure')return;const s=t.trim(),c=s.replace(/\s/g,'');V.heard=s;
  if(/취소|되돌|지워/.test(c))return undo();if(/^(다음|넘겨|스킵|패스)/.test(c))return skip();
  if(/시작|스타트/.test(c)){if(!T.run)tStart();return render()}if(/정지|스톱|멈춰|중지/.test(c)){if(T.run)tStart();return render()}
  if(/리셋|초기화/.test(c)){tResetRaw();return render()}
- const r=parseTarget(s);if(r)return applyTarget(r);
+ const r=parseTarget(s);if(r)return applyTarget(r,force);
+ const left=c.replace(/마이너스|[0-9.,\-영공일이삼사오육륙칠팔구십백천만점쩜]/g,'').replace(/[a-zA-Z/()%℃°²]/g,'').replace(/볼트|암페어|밀리|와트|리터|데시벨|알피엠|번|째|에|은|는|이요|요/g,'');
+ if(/[가-힣]{2,}/.test(left)){const env=ENV_WORDS.find(w=>c.includes(w));
+  toast(env?`‘${env==='내일'?'내열':env}’ 단계가 이 부품에 없어요 — 부품 설정(✎)에서 단계를 추가하세요`:`“${s}” — 단계/항목 이름을 찾지 못했어요`);return render()}
  const v=parseSpoken(c);if(v==null){toast(`“${s}” — 숫자로 인식하지 못했어요`);return render()}
- V.input=String(v);if(S.settings.voiceAuto)commit();else{render()}}
+ V.input=String(v);if(S.settings.voiceAuto||force)commit();else{render()}}
 
 /* ---------- editor ---------- */
 function newItem(o={}){return Object.assign({id:uid(),name:'',unit:'',lsl:'',usl:'',timed:false,dur:60},o)}
